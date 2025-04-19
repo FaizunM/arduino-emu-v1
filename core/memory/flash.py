@@ -7,11 +7,16 @@ class Flash:
         self.load_flash()
 
     def load_flash(self):
+        values = []
         with open(os.path.abspath("flash.bin"), "rb") as f:
-            data = f.read()
+            while True:
+                chunks = f.read(4)
+                if not chunks:
+                    break
+                value = struct.unpack("<" + "I", chunks)[0]
+                values.append(value)
             f.close()
 
-        values = struct.unpack("<" + "H" * (len(data) // 2), data)
         fix_length = len(self.memory)
         self.memory[: len(values)] = values[:fix_length]
 

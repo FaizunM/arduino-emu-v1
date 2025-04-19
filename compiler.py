@@ -112,16 +112,23 @@ OPCODE = {
 
 REGISTER_COUNT = 31
 
+SPECIAL_REGISTER = {
+    "X": "01",
+    "Y": "10",
+    "Z": "11",
+}
 
-def reg_to_addr(value: str):
-    num = int(value.replace("R", ""))
-    if num > 31:
+
+def reg2bin(value: str):
+    num = int(value.replace("R", "").replace("r", ""))
+
+    if num > REGISTER_COUNT:
         raise ValueError("Register out of range")
 
     return format(num, "b")
 
 
-def immediate_to_bin(value: str, limit):
+def immediate2bin(value: str, limit=0xFF):
 
     if value.startswith(("0x", "0X")):
         num = int(value, 16)
@@ -166,21 +173,201 @@ def value_pusher(text, character, value):
 def compiler(line: str):
     if line == "" or line.startswith("#") or line == "\n" or line == "\t":
         return
-    parts = line.replace(",", "").split(" ")
+
+    comment_filter = line.split(";")
+    parts = comment_filter[0].replace(",", "").split(" ")
+    parts[0] = parts[0].upper()
 
     opcode = OPCODE[parts[0]]
 
-    if parts[0] in ["ADIW", "SUBI", "SBCI", "SBIW", "ANDI", "ORI", "LDI", "LDS"]:
-        mask1 = value_pusher(opcode, "d", reg_to_addr(parts[1]).zfill(4))
-        mask2 = value_pusher(mask1, "K", immediate_to_bin(parts[2], 0xFF).zfill(8))
+    if parts[0] in ["SUBI", "SBCI", "SBIW", "ANDI", "ORI", "LDI", "CPI", "SBR"]:
+        mask1 = value_pusher(opcode, "d", reg2bin(parts[1]).zfill(4))
+        mask2 = value_pusher(mask1, "K", immediate2bin(parts[2]).zfill(8))
         return mask2
 
-    elif parts[0] in ["ADD", "ADC", "SUB", "SBC", "AND", "OR", "EOR", "MOV", "MOVW"]:
-        mask1 = value_pusher(opcode, "d", reg_to_addr(parts[1]).zfill(5))
-        mask2 = value_pusher(mask1, "r", reg_to_addr(parts[2]).zfill(5))
+    elif parts[0] in [
+        "ADD",
+        "ADC",
+        "SUB",
+        "SBC",
+        "AND",
+        "OR",
+        "EOR",
+        "MOV",
+        "CP",
+        "CPC",
+        "CPSE",
+        "MUL",
+        "SUB"
+    ]:
+        mask1 = value_pusher(opcode, "d", reg2bin(parts[1]).zfill(5))
+        mask2 = value_pusher(mask1, "r", reg2bin(parts[2]).zfill(5))
+    elif parts[0] in ["SBRC", "SBRS"]:
+        mask1 = value_pusher(opcode, "r", reg2bin(parts[1]).zfill(5))
+        mask2 = value_pusher(mask1, "b", immediate2bin(parts[2]).zfill(5))
         return mask2
+    elif parts[0] in ["ADIW"]:
+        mask1 = value_pusher(opcode, "d", SPECIAL_REGISTER[parts[1]])
+        mask2 = value_pusher(mask1, "K", immediate2bin(parts[2]).zfill(6))
+        return mask2
+    elif parts[0] in ["ASR", "COM", "DEC", "INC", "NEG", "POP", "PUSH", "SBCI", "SWAP"]:
+        mask2 = value_pusher(opcode, "d", reg2bin(parts[1]).zfill(5))
+        return mask2
+    elif parts[0] in ["BCLR"]:
+        mask2 = value_pusher(
+            opcode,
+            "s",
+            immediate2bin(
+                parts[1],
+            ).zfill(3),
+        )
+        return mask2
+    elif parts[0] in ["BLD", "BST"]:
+        mask1 = value_pusher(opcode, "d", reg2bin(parts[1]).zfill(5))
+        mask2 = value_pusher(
+            mask1,
+            "b",
+            immediate2bin(
+                parts[2],
+            ).zfill(3),
+        )
+        return mask2
+    elif parts[0] in ["BRBC", "BRBS", "BSET"]:
+        mask1 = value_pusher(opcode, "s", immediate2bin(parts[1]).zfill(3))
+        mask2 = value_pusher(
+            mask1,
+            "k",
+            immediate2bin(
+                parts[2],
+            ).zfill(7),
+        )
+        return mask2
+    elif parts[0] in [
+        "BRCC",
+        "BRCS",
+        "BREQ",
+        "BRGE",
+        "BRHC",
+        "BRHS",
+        "BRID",
+        "BRIE",
+        "BRLO",
+        "BRLT",
+        "BRMI",
+        "BRNE",
+        "BRPL",
+        "BRSH",
+        "BRTC",
+        "BRTS",
+        "BRVC",
+        "BRVS",
+    ]:
+        mask1 = value_pusher(opcode, "k", immediate2bin(parts[1]).zfill(7))
+
+        return mask1
+
+    elif parts[0] in ["CALL", "JMP"]:
+        mask2 = value_pusher(opcode, "k", immediate2bin(parts[1], 0xFFFF).zfill(22))
+    elif parts[0] in ["LDS"]:
+        mask1 = value_pusher(opcode, "d", reg2bin(parts[1]).zfill(5))
+        mask2 = value_pusher(mask1, "k", immediate2bin(parts[2], 0xFFFF).zfill(16))
+        return mask2
+    elif parts[0] in ["STS"]:
+        mask1 = value_pusher(opcode, "k", immediate2bin(parts[1], 0xFFFF).zfill(16))
+        mask2 = value_pusher(mask1, "d", reg2bin(parts[2]).zfill(5))
+        return mask2
+    elif parts[0] in ["SBIW"]:
+        mask1 = value_pusher(opcode, "d", reg2bin(parts[1]).zfill(2))
+        mask2 = value_pusher(mask1, "k", immediate2bin(parts[2], 0xFFFF).zfill(6))
+        return mask2
+    elif parts[0] in ["CBI", "SBI", "SBIC", "SBIS"]:
+        mask1 = value_pusher(opcode, "A", immediate2bin(parts[1], 0xFFFF).zfill(5))
+        mask2 = value_pusher(
+            mask1,
+            "b",
+            immediate2bin(
+                parts[2],
+            ).zfill(3),
+        )
+        return mask2
+    elif parts[0] in ["CLR"]:
+        mask2 = value_pusher(opcode, "d", immediate2bin(parts[1]).zfill(10))
+        return mask2
+    elif parts[0] in ["FMUL", "FMULS", "FMULSU", "MULSU"]:
+        mask1 = value_pusher(opcode, "d", reg2bin(parts[1]).zfill(3))
+        mask2 = value_pusher(mask1, "r", reg2bin(parts[2]).zfill(3))
+        return mask2
+    elif parts[0] in ["IN"]:
+        mask1 = value_pusher(opcode, "d", reg2bin(parts[1]).zfill(5))
+        mask2 = value_pusher(
+            mask1,
+            "A",
+            immediate2bin(
+                parts[2],
+            ).zfill(6),
+        )
+        return mask2
+
+    elif parts[0] in ["LSL", "LSR", "ROL"]:
+        mask2 = value_pusher(opcode, "d", reg2bin(parts[1]).zfill(10))
+        return mask2
+    elif parts[0] in ["ROR"]:
+        mask2 = value_pusher(opcode, "d", reg2bin(parts[1]).zfill(4))
+        return mask2
+    elif parts[0] in ["MOVW", "MULS"]:
+        mask1 = value_pusher(opcode, "d", reg2bin(parts[1]).zfill(4))
+        mask2 = value_pusher(mask1, "r", reg2bin(parts[2]).zfill(4))
+        return mask2
+    elif parts[0] in ["OUT"]:
+        mask1 = value_pusher(opcode, "A", immediate2bin(parts[1]).zfill(6))
+        mask2 = value_pusher(
+            mask1,
+            "r",
+            reg2bin(
+                parts[2],
+            ).zfill(4),
+        )
+        return mask2
+    elif parts[0] in ["RCALL", "RJMP"]:
+        mask2 = value_pusher(opcode, "k", immediate2bin(parts[1], 0xFFFF).zfill(12))
+        return mask2
+    elif parts[0] in ["TST"]:
+        mask2 = value_pusher(opcode, "d", reg2bin(parts[1]).zfill(12))
+        return mask2
+    elif parts[0] in [
+        "BREAK",
+        "CLC",
+        "CLH",
+        "CLI",
+        "CLN",
+        "CLS",
+        "CLT",
+        "CLV",
+        "CLZ",
+        "EICALL",
+        "EIJMP",
+        "ECALL",
+        "IJMP",
+        "NOP",
+        "RET",
+        "RETI",
+        "SEC",
+        "SEH",
+        "SEI",
+        "SEN",
+        "SER",
+        "SES",
+        "SET",
+        "SEV",
+        "SEZ",
+        "SLEEP",
+        "SPM",
+        "WSR"
+        
+    ]:
+        return opcode
     else:
-        raise ValueError(f"Unknows OPCODE: {parts[0]}:{OPCODE[parts[0]]}")
+        raise ValueError(f"Unknows OPCODE: {parts[0]}")
 
 
 if __name__ == "__main__":
@@ -189,20 +376,21 @@ if __name__ == "__main__":
     with open("input.asm", "r") as f:
         l = 1
         for line in f:
+            line = line.replace("\n", "")
             try:
-                print(f"[{l}] ", end="")
+                print(f"{str(l).rjust(5)} ->   ", end="")
                 binary = compiler(line)
                 if binary != None:
                     print(f"{binary}", end="")
                     binary_lines.append(int(binary.replace(" ", ""), 2))
                 print()
             except Exception as e:
-                print(f"  --->  {str(e)}")
+                print(f"{line}  --->  {str(e)}")
             l += 1
 
         f.close()
 
-    data = struct.pack("<" + "H" * len(binary_lines), *binary_lines)
+    data = struct.pack("<" + "I" * len(binary_lines), *binary_lines)
     with open("flash.bin", "wb") as f:
         f.write(data)
         f.flush()

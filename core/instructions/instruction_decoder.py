@@ -22,7 +22,7 @@ class InstructionDecoder:
             if not definition:
                 self.alu.ADC(destination, source)
                 self.PC.address += 1
-            return f"ADC R{source}, {source}"
+            return f"ADC R{destination}, {source}"
         # ADD
         elif (operation >> 10) & 0b111111 == 0b000011:
             destination = (operation >> 4) & 0b11111
@@ -32,7 +32,7 @@ class InstructionDecoder:
             if not definition:
                 self.alu.ADD(destination, source)
                 self.PC.address += 1
-            return f"ADD R{source}, {source}"
+            return f"ADD R{destination}, {source}"
         # SUB
         elif (operation >> 10) & 0b111111 == 0b000010:
             destination = (operation >> 4) & 0b11111
@@ -42,7 +42,7 @@ class InstructionDecoder:
             if not definition:
                 self.alu.SUB(destination, source)
                 self.PC.address += 1
-            return f"SUB R{source}, {source}"
+            return f"SUB R{destination}, {source}"
         # SBC
         elif (operation >> 10) & 0b111111 == 0b000110:
             destination = (operation >> 4) & 0b11111
@@ -52,7 +52,7 @@ class InstructionDecoder:
             if not definition:
                 self.alu.SBC(destination, source)
                 self.PC.address += 1
-            return f"SBC R{source}, {source}"
+            return f"SBC R{destination}, {source}"
         # LDI
         elif (operation >> 12) & 0b1111 == 0b1110:
             destination = (operation >> 4) & 0b1111
@@ -62,7 +62,7 @@ class InstructionDecoder:
             if not definition:
                 self.alu.LDI(destination, source)
                 self.PC.address += 1
-            return f"LDI R{source}, {source}"
+            return f"LDI R{destination}, {source}"
         else:
             if not definition:
                 self.PC.address += 1
