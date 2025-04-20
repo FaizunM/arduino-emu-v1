@@ -63,6 +63,16 @@ class InstructionDecoder:
                 self.alu.LDI(destination, source)
                 self.PC.address += 1
             return f"LDI R{destination}, {source}"
+        # CALL
+        elif operation >> 17 & 0b111 and operation >> 25 & 0b1111111:
+            high = (operation >> 20) & 0b11111
+            low = (operation) & 0b11111111111111111
+            destination = (high << 17) | low
+
+            if not definition:
+                self.alu.CALL(destination)
+                self.PC.address += 1
+            return f"CALL { hex(destination) }"
         else:
             if not definition:
                 self.PC.address += 1

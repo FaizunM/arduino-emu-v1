@@ -14,5 +14,3 @@ class ProgramCounter:
             self.ins_decoder.decode(self.flash.get(self.address))
         except Exception as e:
             print(f"DECODER FAIL -> {str(e)}")
-            self.address += 1
-            input()

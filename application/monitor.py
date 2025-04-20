@@ -14,7 +14,7 @@ class Monitor:
 
         if self.PC.address > self.PC.address + 32:
             raise "Out of memory"
-        print("\n      ADDRESS     -->  OPCODE            -->  Definition\n")
+        print("\n      ADDRESS     -->  OPCODE                                   -->  Definition\n")
 
         for y in range(0 + self.PC.address, 5 + self.PC.address):
             addrs = format(y, "X").zfill(8)
@@ -23,8 +23,8 @@ class Monitor:
                 f"{' --> 'if self.PC.address == y else '     '} 0x{addrs}  -->  ",
                 end="",
             )
-            hexval = format(self.flash.get(y), "b").zfill(16)
-            print(hexval, end="")
+            hexval = format(self.flash.get(y), "b").zfill(32)
+            print(" ".join(hexval[i : i + 4] for i in range(0, len(hexval), 4)), end="")
             try:
                 definition = self.Decoder.decode(self.flash.get(y), True)
                 print(f"  -->  {definition}")

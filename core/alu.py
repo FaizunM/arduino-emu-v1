@@ -123,3 +123,6 @@ class ALU:
 
     def LDI(self, destination: int, value: int):
         self.ins_register.set(destination, value)
+
+    def CALL(self, destination: int):
+        pass

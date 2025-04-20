@@ -27,7 +27,7 @@ class MainApp:
         print(f"\n --- {start}:{end} ---")
         address = input(" Address <start:end> --> ")
         split = address.split(":")
-        dump.dump(int(split[0], 16), int(split[1], 16))
+        dump.dumpv2(int(split[0], 16), int(split[1], 16))
 
         self.bottom_bar(self.read_SRAM)
 
@@ -40,7 +40,7 @@ class MainApp:
         print(f"\n --- {start}:{end} ---")
         address = input(" Address <start:end> --> ")
         split = address.split(":")
-        dump.dump(int(split[0], 16), int(split[1], 16))
+        dump.dumpv2(int(split[0], 16), int(split[1], 16))
 
         self.bottom_bar(self.read_flash)
 
@@ -54,7 +54,7 @@ class MainApp:
         print(f"\n --- {start}:{end} ---")
         address = input(" Address <start:end> --> ")
         split = address.split(":")
-        dump.dump(int(split[0], 16), int(split[1], 16))
+        dump.dumpv2(int(split[0], 16), int(split[1], 16))
 
         self.bottom_bar(self.read_EEPROM)
 
@@ -63,7 +63,7 @@ class MainApp:
         print("\n --- Registers READER ---\n")
 
         dump = HexDump(self.ins_register.registers)
-        dump.dump(0, len(self.ins_register.registers))
+        dump.dumpv2(0, len(self.ins_register.registers))
 
         self.bottom_bar(self.read_registers)
 

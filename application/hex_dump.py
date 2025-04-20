@@ -2,43 +2,60 @@ class HexDump:
     def __init__(self, block_address):
         self.block_address = block_address
 
-    def dump(self, start, end):
+    def dumpv2(self, start, end):
         if end > len(self.block_address):
             raise "Out of memory"
         print("\n ADDRESS     -->  ", end="")
         for i in range(0, 16):
             print(format(i, "X").zfill(2), end=" ")
         print("\n")
-        for y in range(start, end - 1, 8):
-            addrs = format(y, "X").zfill(8)
 
-            print(f" 0x{addrs}  -->  ", end="")
-            for x in range(y, y + 8):
-                try:
-                    hexval = format(self.block_address[x], "X").zfill(4)
-                    print(hexval[2:], end=" ")
-                    print(hexval[:2], end=" ")
-                except:
-                    print("      ", end="")
+        ybytes = []
+        xbytes = []
+        for y in range(start, end):
+            value_bin = format(self.block_address[y], "X")
+            for cut in range(0, len(value_bin), 2):
+                xbytes.append(value_bin[cut : cut + 2])
+                if len(xbytes) >= 16:
+                    ybytes.append(xbytes)
+                    xbytes = []
 
-            print(f"  -->   ", end="")
-            for x in range(y, y + 8):
-                try:
-                    hexval = format(self.block_address[x], "X").zfill(4)
-                    decode_hex1 = bytes.fromhex(hexval[2:]).decode("windows-1252", errors='replace')
-                    if not decode_hex1.isprintable():
-                        print('.', end=' ')
-                    else:
-                        print(decode_hex1, end=" ")
+        zero = False
+        printed = False
+        for idx, y in enumerate(ybytes):
+            addrs = format(idx * 16, "X").zfill(8)
+
+            if not zero:
+                print(f" 0x{addrs}  -->  ", end="")
+                for x in y:
+                    print(f"{str(x).zfill(2)}", end=" ")
+                print("  -->  ", end="")
+                for x in y:
+                    try:
+                        decode_hex1 = bytes.fromhex(x).decode(
+                            "windows-1252", errors="replace"
+                        )
+                        if not decode_hex1.isprintable():
+                            print(".", end=" ")
+                        else:
+                            print(decode_hex1, end=" ")
+
+                    except IndexError:
+                        print("    ", end="")
+                    except:
+                        print(".", end=" ")
+
+                print("")
+            else:
+                if not printed:
+                    print(' *')
+                    printed = True
+
+            if "".join(y) == "0000000000000000":
+                zero = True
+            else:
+                if printed:
+                    print(addrs)
                     
-                    decode_hex2 = bytes.fromhex(hexval[:2]).decode("windows-1252", errors='replace')
-                    if not decode_hex2.isprintable():
-                        print('.', end=' ')
-                    else:
-                        print(decode_hex2, end=" ")
-                except IndexError:
-                    print("    ", end="")
-                except:
-                    print(".", end=" ")
-
-            print("")
+                zero = False
+                printed = False
