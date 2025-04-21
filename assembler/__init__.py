@@ -27,7 +27,7 @@ class Assembler:
         self.instructions: list = instructions
         self.text_segment: Text = []
         self.data_segment: Data = []
-        self.symbol_table = {".data": {}, ".text": {}}
+        self.symbol_table = {}
         self.address = 0x0
 
         self.data_section = False
@@ -42,9 +42,26 @@ class Assembler:
         opcode = line.split(" ")[0].upper()
         operands = line[len(opcode) :].replace(" ", "").split(",")
 
-        ins = Instruction(opcode, operands, self.symbol_table)
+        filter_symbol = []
+        for oprnd in operands:
+            if oprnd in self.symbol_table:
+                if self.symbol_table[oprnd]["section"] == ".data":
+                    filter_symbol.append(int(self.symbol_table[f"{oprnd}"]["value"]))
+            if oprnd in self.symbol_table:
+                if self.symbol_table[oprnd]["section"] == ".text":
+                    filter_symbol.append(int(self.symbol_table[f"{oprnd}"]["address"]))
+            else:
+                filter_symbol.append(oprnd)
+
+        ins = Instruction(opcode, filter_symbol)
         result = ins.encode()
-        return result
+        if len(result) > 16:
+            front = result[:16]
+            back = result[16:]
+            swap = int(back + front, 2)
+            return format(swap, 'b')
+        else:
+            return result
 
     def parse_line(self):
         for num, line in enumerate(self.instructions):
@@ -74,7 +91,8 @@ class Assembler:
                     data = Data(label, value, self.address)
                     self.data_segment.append(data)
 
-                    self.symbol_table[".data"][f"{label}"] = {
+                    self.symbol_table[f"{label}"] = {
+                        "section": ".data",
                         "address": self.address,
                         "type": "variable",
                         "value": int(value, 0),
@@ -83,7 +101,8 @@ class Assembler:
                 elif self.text_section:
                     if line[-1] == ":":
                         label = line.replace(":", "")
-                        self.symbol_table[".text"][f"{label}"] = {
+                        self.symbol_table[f"{label}"] = {
+                            "section": ".text",
                             "address": self.address,
                             "type": "label",
                             "value": None,
@@ -107,14 +126,11 @@ class Assembler:
     def compile(self):
         self.parse_line()
 
-
         for idx, address in enumerate(
             range((self.address) - len(self.data_segment), (self.address))
         ):
             self.data_segment[idx].address = address
-            self.symbol_table[".data"][f"{self.data_segment[idx].label}"][
-                "address"
-            ] = address
+            self.symbol_table[f"{self.data_segment[idx].label}"]["address"] = address
 
         self.write = False
         for idx, text in enumerate(self.text_segment):
@@ -122,7 +138,7 @@ class Assembler:
                 self.write = True
             if self.write:
                 if self.text_segment[idx].label != None:
-                    self.symbol_table[".text"][f"{self.text_segment[idx].label}"][
+                    self.symbol_table[f"{self.text_segment[idx].label}"][
                         "address"
                     ] = self.compile_address
                 self.text_segment[idx].address = self.compile_address
@@ -141,20 +157,19 @@ class Assembler:
 
             if self.write:
                 if self.text_segment[idx].label != None:
-                    self.symbol_table[".text"][f"{self.text_segment[idx].label}"][
+                    self.symbol_table[f"{self.text_segment[idx].label}"][
                         "address"
                     ] = self.compile_address
                 self.text_segment[idx].address = self.compile_address
                 self.compile_address += 1
 
-        
-        Binary = [0] * self.address        
+        Binary = [0] * self.address
 
         for idx, text in enumerate(self.text_segment):
             encode = self.encode_line(text.instruction)
-            Binary[text.address] = int(encode.replace(' ', ''), 2)
-            
+            Binary[text.address] = int(encode.replace(" ", ""), 2)
+
         for idx, data in enumerate(self.data_segment):
             Binary[data.address] = int(data.value, 0)
-        
+
         return Binary

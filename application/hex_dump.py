@@ -13,7 +13,7 @@ class HexDump:
         ybytes = []
         xbytes = []
         for y in range(start, end):
-            value_bin = format(self.block_address[y], "X")
+            value_bin = format(self.block_address[y], "X").zfill(8)
             for cut in range(0, len(value_bin), 2):
                 xbytes.append(value_bin[cut : cut + 2])
                 if len(xbytes) >= 16:

@@ -4,10 +4,11 @@ from core.instructions.status_register import StatusRegister
 
 
 class ALU:
-    def __init__(self, ins_register, sram):
+    def __init__(self, ins_register, sram, prog_counter):
         self.sram: SRAM = sram
         self.ins_register: InstructionRegister = ins_register
         self.SREG: StatusRegister = StatusRegister()
+        self.PC = prog_counter
 
     def ADC(self, destination: int, source: int):
         dest = self.ins_register.get(destination)

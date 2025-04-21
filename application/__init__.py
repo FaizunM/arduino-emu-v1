@@ -14,9 +14,8 @@ class MainApp:
         self.ins_register = InstructionRegister()
         self.flash = Flash()
         self.SRAM = SRAM()
-        self.alu = ALU(self.ins_register, self.SRAM)
+        self.PC = ProgramCounter(self.flash, self.ins_register, self.SRAM)
         self.EEPROM = EEPROM()
-        self.PC = ProgramCounter(self.flash,  self.alu)
 
     def read_SRAM(self):
         self.header()

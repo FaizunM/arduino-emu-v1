@@ -2,26 +2,34 @@ from assembler.opcode_list import OPCODE, SPECIAL_REGISTER, REGISTER_COUNT
 
 
 class Instruction:
-    def __init__(self, opcode, operands, symbol_map):
+    def __init__(self, opcode, operands):
         self.opcode = opcode
         self.operands = operands
-        self.symbol_map = symbol_map
 
     def encode(self):
-        if self.opcode in ["SUBI", "SBCI", "SBIW", "ANDI", "ORI", "LDI", "CPI", "SBR"]:
-            value = None
-            if self.operands[1] in self.symbol_map[".data"]:
-                value = self.symbol_map[".data"][f"{self.operands[1]}"]["value"]
-            else:
-                value = self.operands[1]
-
+        if self.opcode in [
+            "SUBI",
+            "SBCI",
+            "ANDI",
+            "ORI",
+            "LDI",
+            "CPI",
+            "SBR",
+            "CBR",
+        ]:
             mask1 = self.value_pusher(
                 OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(4)
             )
-            mask2 = self.value_pusher(
-                mask1, "K", self.immediate2bin(str(value)).zfill(8)
-            )
-            return mask2.replace(' ', '')
+            val2 = None
+            if str(self.operands[1]).startswith("0x"):
+                mask2 = self.value_pusher(
+                    mask1, "K", format(int(self.operands[1], 16), "b").zfill(8)
+                )
+            else:
+                mask2 = self.value_pusher(
+                    mask1, "K", self.formater_value(self.operands[1]).zfill(8)
+                )
+            return mask2.replace(" ", "")
 
         elif self.opcode in [
             "ADD",
@@ -44,23 +52,23 @@ class Instruction:
             mask2 = self.value_pusher(
                 mask1, "r", self.reg2bin(self.operands[1]).zfill(5)
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["SBRC", "SBRS"]:
             mask1 = self.value_pusher(
                 OPCODE[self.opcode], "r", self.reg2bin(self.operands[0]).zfill(5)
             )
             mask2 = self.value_pusher(
-                mask1, "b", self.immediate2bin(self.operands[1]).zfill(5)
+                mask1, "b", self.formater_value(self.operands[1]).zfill(5)
             )
-            return mask2.replace(' ', '')
-        elif self.opcode in ["ADIW"]:
+            return mask2.replace(" ", "")
+        elif self.opcode in ["ADIW", "SBIW"]:
             mask1 = self.value_pusher(
                 OPCODE[self.opcode], "d", SPECIAL_REGISTER[self.operands[0]]
             )
             mask2 = self.value_pusher(
-                mask1, "K", self.immediate2bin(self.operands[1]).zfill(6)
+                mask1, "K", format(int(self.operands[1], 16), "b").zfill(6)
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in [
             "ASR",
             "COM",
@@ -75,16 +83,14 @@ class Instruction:
             mask2 = self.value_pusher(
                 OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(5)
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["BCLR"]:
             mask2 = self.value_pusher(
                 OPCODE[self.opcode],
                 "s",
-                self.immediate2bin(
-                    self.operands[0],
-                ).zfill(3),
+                self.formater_value(self.operands[0]).zfill(3),
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["BLD", "BST"]:
             mask1 = self.value_pusher(
                 OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(5)
@@ -92,23 +98,19 @@ class Instruction:
             mask2 = self.value_pusher(
                 mask1,
                 "b",
-                self.immediate2bin(
-                    self.operands[1],
-                ).zfill(3),
+                self.formater_value(self.operands[1]).zfill(3),
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["BRBC", "BRBS", "BSET"]:
             mask1 = self.value_pusher(
-                OPCODE[self.opcode], "s", self.immediate2bin(self.operands[0]).zfill(3)
+                OPCODE[self.opcode], "s", self.formater_value(self.operands[0]).zfill(3)
             )
             mask2 = self.value_pusher(
                 mask1,
                 "k",
-                self.immediate2bin(
-                    self.operands[1],
-                ).zfill(7),
+                self.formater_value(self.operands[0]).zfill(7),
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in [
             "BRCC",
             "BRCS",
@@ -130,68 +132,62 @@ class Instruction:
             "BRVS",
         ]:
             mask1 = self.value_pusher(
-                OPCODE[self.opcode], "k", self.immediate2bin(self.operands[0]).zfill(7)
+                OPCODE[self.opcode], "k", self.formater_value(self.operands[0]).zfill(7)
             )
 
-            return mask1.replace(' ', '')
+            return mask1.replace(" ", "")
 
         elif self.opcode in ["CALL", "JMP"]:
-            value = None
-            if self.operands[0] in self.symbol_map[".text"]:
-                value = self.symbol_map[".text"][f"{self.operands[0]}"]["address"]
-            else:
-                value = self.operands[0]
+
             mask2 = self.value_pusher(
                 OPCODE[self.opcode],
                 "k",
-                self.immediate2bin(str(value)).zfill(22),
+                self.formater_value(self.operands[0]).zfill(22),
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["LDS"]:
             mask1 = self.value_pusher(
                 OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(5)
             )
             mask2 = self.value_pusher(
-                mask1, "k", self.immediate2bin(self.operands[1]).zfill(16)
+                mask1, "k", format(int(self.operands[1], 0), "b").zfill(16)
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["STS"]:
             mask1 = self.value_pusher(
                 OPCODE[self.opcode],
                 "k",
-                self.immediate2bin(self.operands[0]).zfill(16),
+                self.formater_value(self.operands[0]).zfill(16),
             )
             mask2 = self.value_pusher(
                 mask1, "d", self.reg2bin(self.operands[1]).zfill(5)
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["SBIW"]:
             mask1 = self.value_pusher(
                 OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(2)
             )
             mask2 = self.value_pusher(
-                mask1, "k", self.immediate2bin(self.operands[1]).zfill(6)
+                mask1, "k", self.formater_value(self.operands[1]).zfill(6)
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["CBI", "SBI", "SBIC", "SBIS"]:
             mask1 = self.value_pusher(
                 OPCODE[self.opcode],
                 "A",
-                self.immediate2bin(self.operands[0]).zfill(5),
+                self.formater_value(self.operands[0]).zfill(5),
             )
             mask2 = self.value_pusher(
                 mask1,
                 "b",
-                self.immediate2bin(
-                    self.operands[1],
-                ).zfill(3),
+                self.formater_value(self.operands[1]).zfill(3),
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["CLR"]:
             mask2 = self.value_pusher(
-                OPCODE[self.opcode], "d", self.immediate2bin(self.operands[0]).zfill(10)
+                OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(10)
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["FMUL", "FMULS", "FMULSU", "MULSU"]:
             mask1 = self.value_pusher(
                 OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(3)
@@ -199,7 +195,7 @@ class Instruction:
             mask2 = self.value_pusher(
                 mask1, "r", self.reg2bin(self.operands[1]).zfill(3)
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["IN"]:
             mask1 = self.value_pusher(
                 OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(5)
@@ -207,22 +203,20 @@ class Instruction:
             mask2 = self.value_pusher(
                 mask1,
                 "A",
-                self.immediate2bin(
-                    self.operands[1],
-                ).zfill(6),
+                self.formater_value(self.operands[1]).zfill(6),
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
 
         elif self.opcode in ["LSL", "LSR", "ROL"]:
             mask2 = self.value_pusher(
                 OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(10)
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["ROR"]:
             mask2 = self.value_pusher(
                 OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(4)
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["MOVW", "MULS"]:
             mask1 = self.value_pusher(
                 OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(4)
@@ -230,10 +224,10 @@ class Instruction:
             mask2 = self.value_pusher(
                 mask1, "r", self.reg2bin(self.operands[1]).zfill(4)
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["OUT"]:
             mask1 = self.value_pusher(
-                OPCODE[self.opcode], "A", self.immediate2bin(self.operands[0]).zfill(6)
+                OPCODE[self.opcode], "A", self.formater_value(self.operands[0]).zfill(6)
             )
             mask2 = self.value_pusher(
                 mask1,
@@ -242,19 +236,19 @@ class Instruction:
                     self.operands[1],
                 ).zfill(4),
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["RCALL", "RJMP"]:
             mask2 = self.value_pusher(
                 OPCODE[self.opcode],
                 "k",
-                self.immediate2bin(self.operands[0]).zfill(12),
+                self.formater_value(self.operands[0]).zfill(12),
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in ["TST"]:
             mask2 = self.value_pusher(
                 OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(12)
             )
-            return mask2.replace(' ', '')
+            return mask2.replace(" ", "")
         elif self.opcode in [
             "BREAK",
             "CLC",
@@ -269,6 +263,7 @@ class Instruction:
             "EIJMP",
             "ECALL",
             "IJMP",
+            "ICALL",
             "NOP",
             "RET",
             "RETI",
@@ -289,6 +284,13 @@ class Instruction:
         else:
             raise ValueError(f"Unknows OPCODE: {self.opcode}")
 
+    def formater_value(self, value):
+        if str(value).startswith("0x"):
+            return format(int(value, 16), "b")
+        if str(value).isdigit():
+            return format(int(value), "b")
+            
+
     def reg2bin(self, value: str):
         num = int(value.replace("R", "").replace("r", ""))
 
@@ -296,9 +298,6 @@ class Instruction:
             raise ValueError("Register out of range")
 
         return format(num, "b")
-
-    def immediate2bin(self, value: str):
-        return format(int(value, 0), "b")
 
     def value_pusher(self, text, character, value):
         array = []

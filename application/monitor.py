@@ -10,7 +10,9 @@ class Monitor:
         self.Decoder: InstructionDecoder = InstructionDecoder()
 
     def show(self):
-        print(f"On Process: {format(self.flash.get(self.PC.address), 'b').zfill(16)}")
+        onpros = format(self.flash.get(self.PC.address), "b").zfill(32)
+        
+        print(f"On Process: {' '.join(onpros[i : i + 4] for i in range(0, len(onpros), 4))}")
 
         if self.PC.address > self.PC.address + 32:
             raise "Out of memory"
@@ -26,7 +28,7 @@ class Monitor:
             hexval = format(self.flash.get(y), "b").zfill(32)
             print(" ".join(hexval[i : i + 4] for i in range(0, len(hexval), 4)), end="")
             try:
-                definition = self.Decoder.decode(self.flash.get(y), True)
+                definition = self.Decoder.decode(self.flash.get(y))
                 print(f"  -->  {definition}")
             except Exception as e:
                 print(f"  -->  {e}")
