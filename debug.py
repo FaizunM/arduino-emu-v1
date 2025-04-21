@@ -1,13 +1,10 @@
-from application.app import MyApplication
+from application import MainApp
 import curses
 
-def main(stdscr):
-    app = MyApplication(stdscr)
-    app.run()
-    
 if __name__ == "__main__":
     try:
-        curses.wrapper(main)
+        app = MainApp()
+        app.run()
     except KeyboardInterrupt:
         print("Exit by Keyboard Interrupt")
 

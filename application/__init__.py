@@ -108,7 +108,7 @@ ______________________________________________________________
     def run(self):
         while True:
             self.header()
-
+            print(self.flash.get_used()['end'])
             print("--- MENU ---")
             menus = [
                 {"text": "Monitor", "command": self.monitor},

@@ -7,7 +7,7 @@ class Monitor:
     def __init__(self, flash: Flash, PC: ProgramCounter):
         self.PC: ProgramCounter = PC
         self.flash: Flash = flash
-        self.Decoder: InstructionDecoder = InstructionDecoder()
+        self.Decoder: InstructionDecoder = InstructionDecoder(DefinitionMode=True)
 
     def show(self):
         onpros = format(self.flash.get(self.PC.address), "b").zfill(32)
