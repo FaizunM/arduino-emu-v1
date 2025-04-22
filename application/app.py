@@ -27,7 +27,7 @@ class MyApplication:
         self.height, self.width = self.stdscr.getmaxyx()
 
         self.page_manager = PageManager(
-            self.stdscr, self.PC, self.flash, self.SRAM, self.EEPROM
+            self.stdscr, self.PC, self.flash, self.SRAM, self.EEPROM, self.ins_register
         )
 
     def draw_bottom_bar(self):
@@ -60,8 +60,9 @@ class MyApplication:
             2,
             1,
             f"On Process ->  {format(self.flash.get(self.PC.address), 'b').zfill(32)} ",
-        )
+        )        
         self.draw_bottom_bar()
+        
         self.stdscr.noutrefresh()
         self.page_manager.draw()
 

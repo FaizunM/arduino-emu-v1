@@ -2,11 +2,10 @@ from core.alu import ALU
 
 
 class InstructionDecoder:
-    def __init__(self, ins_register = None, SRAM = None, PC = None, DefinitionMode = False):
+    def __init__(self, ins_register=None, SRAM=None, PC=None, DefinitionMode=False):
         self.DefinitionMode = DefinitionMode
         if not DefinitionMode:
             self.alu = ALU(ins_register, SRAM, PC)
-        
 
     def decode(self, operation: int):
         if operation > 0xFFFF:
@@ -20,9 +19,8 @@ class InstructionDecoder:
                 destination = (dest_H << 17) | (dest_L << 1) | word1
 
                 if not self.DefinitionMode:
-                    # self.alu.CALL(destination)
-                    pass
-    
+                    self.alu.JMP(destination)
+
                 return f"JMP {hex(destination)}"
 
             # LDS
@@ -31,9 +29,8 @@ class InstructionDecoder:
                 source = word1 & 0xFFFF
 
                 if not self.DefinitionMode:
-                    # self.alu.CALL(destination)
-                    pass
-    
+                    self.alu.LDS(destination, source)
+
                 return f"LDS R{destination}, { hex(source) }"
 
             # CALL
@@ -43,20 +40,19 @@ class InstructionDecoder:
                 destination = (dest_H << 17) | (dest_L << 1) | word1
 
                 if not self.DefinitionMode:
-                    # self.alu.CALL(destination)
-                    pass
-    
+                    self.alu.CALL(destination)
+
                 return f"CALL { hex(destination) }"
             # STS
             elif word2 >> 9 & 0b1111111 == 0b1001001 and word2 & 0b1111 == 0b0000:
-                destination = word2 >> 4 & 0b11111
-                source = word1 & 0xFFFF
+                source = word2 >> 4 & 0b11111
+                destination = word1 & 0xFFFF
 
                 if not self.DefinitionMode:
-                    # self.alu.CALL(destination)
+                    self.alu.STS(destination, source)
                     pass
-    
-                return f"STS R{destination}, { hex(source) }"
+
+                return f"STS {hex(destination)}, R{ source }"
         if operation == 0x0:
             return f"NOP"
         # ADC / ROL
@@ -75,12 +71,13 @@ class InstructionDecoder:
             destination = (operation >> 4) & 0b11111
             high = (operation >> 9) & 0b1
             low = (operation) & 0b1111
-            source = (high << 5) | low
+            source = (high << 4) | low
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
-                pass
+                self.alu.ADD(destination, source)
 
-            return f"ADD/LSL R{destination}, {source}"
+            return f"ADD/LSL R{destination}, R{source}"
+
+        
 
         # ADIW
         elif (operation >> 8) & 0b11111111 == 0b10010110:
@@ -89,7 +86,7 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 4) | low
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"ADIW R{destination}, {source}"
@@ -101,12 +98,12 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 4) | low
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
-                pass
-            if source == 0x0:
-                return f"TST R{destination}"
-            else:
-                return f"AND R{destination}, {source}"
+                self.alu.AND(destination, source)
+
+            return f"AND R{destination}, R{source}"
+            # if source == 0x0:
+                # return f"TST R{destination}"
+            # else:
 
         # ANDI/CBR
         elif (operation >> 12) & 0b1111 == 0b0111:
@@ -115,7 +112,7 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 4) | low
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"ANDI/CBR R{destination}, {source}"
@@ -124,7 +121,7 @@ class InstructionDecoder:
         elif (operation >> 9) & 0b1111111 == 0b1001010 and operation & 0b1111 == 0b0101:
             destination = (operation >> 4) & 0b1111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"ASR R{destination}"
@@ -132,7 +129,7 @@ class InstructionDecoder:
         # SEH
         elif (operation) & 0b1111111111111111 == 0b1001010001011000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SEH"
@@ -140,7 +137,7 @@ class InstructionDecoder:
         # SEI
         elif (operation) & 0b1111111111111111 == 0b1001010001111000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SEI"
@@ -148,7 +145,7 @@ class InstructionDecoder:
         # SEN
         elif (operation) & 0b1111111111111111 == 0b1001010000101000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SEN"
@@ -156,17 +153,28 @@ class InstructionDecoder:
         # SEC
         elif (operation) & 0b1111111111111111 == 0b1001010000001000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SEC"
+        
+        # LDI
+        elif (operation >> 12) & 0b1111 == 0b1110:
+            destination = ((operation >> 4) & 0b1111) + 16
+            high = (operation >> 8) & 0b1111
+            low = (operation) & 0b1111
+            source = (high << 4) | low
+            if not self.DefinitionMode:
+                self.alu.LDI(destination, source)
+
+            return f"LDI R{destination}, {hex(source)}"
 
         # SER
         elif (
             operation >> 8
         ) & 0b11111111 == 0b11101111 and operation & 0b1111 == 0b1111:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SER"
@@ -174,7 +182,7 @@ class InstructionDecoder:
         # SES
         elif (operation) & 0b1111111111111111 == 0b1001010001001000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SES"
@@ -182,7 +190,7 @@ class InstructionDecoder:
         # SET
         elif (operation) & 0b1111111111111111 == 0b1001010001101000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SET"
@@ -190,7 +198,7 @@ class InstructionDecoder:
         # SEV
         elif (operation) & 0b1111111111111111 == 0b1001010000111000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SEV"
@@ -198,7 +206,7 @@ class InstructionDecoder:
         # SEZ
         elif (operation) & 0b1111111111111111 == 0b1001010000011000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SEZ"
@@ -206,7 +214,7 @@ class InstructionDecoder:
         # SLEEP
         elif (operation) & 0b1111111111111111 == 0b1001010110001000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SLEEP"
@@ -214,7 +222,7 @@ class InstructionDecoder:
         # SPM
         elif (operation) & 0b1111111111111111 == 0b1001010111101000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SPM"
@@ -222,56 +230,56 @@ class InstructionDecoder:
         # CLC
         elif (operation) & 0b1111111111111111 == 0b1001010010001000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"CLC"
         # CLH
         elif (operation) & 0b1111111111111111 == 0b1001010011011000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"CLH"
         # CLI
         elif (operation) & 0b1111111111111111 == 0b1001010011111000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"CLI"
         # CLN
         elif (operation) & 0b1111111111111111 == 0b1001010010101000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"CLN"
         # CLS
         elif (operation) & 0b1111111111111111 == 0b1001010011001000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"CLS"
         # CLT
         elif (operation) & 0b1111111111111111 == 0b1001010011101000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"CLT"
         # CLV
         elif (operation) & 0b1111111111111111 == 0b1001010010111000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"CLV"
         # CLZ
         elif (operation) & 0b1111111111111111 == 0b1001010010011000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"CLZ"
@@ -281,7 +289,7 @@ class InstructionDecoder:
         ) & 0b111111111 == 0b100101001 and operation & 0b1111 == 0b1000:
             destination = (operation >> 4) & 0b111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BCLR {destination}"
@@ -291,7 +299,7 @@ class InstructionDecoder:
             destination = (operation >> 4) & 0b11111
             source = operation & 0b111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BLD R{destination}, {source}"
@@ -300,7 +308,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111101 and operation & 0b111 == 0b000:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRCC/BRSH {hex(destination)}"
@@ -309,7 +317,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111100 and operation & 0b111 == 0b000:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRCS/BRLO {hex(destination)}"
@@ -318,7 +326,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111100 and operation & 0b111 == 0b001:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BREQ {hex(destination)}"
@@ -327,7 +335,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111101 and operation & 0b111 == 0b100:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRGE {hex(destination)}"
@@ -336,7 +344,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111101 and operation & 0b111 == 0b101:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRHC {hex(destination)}"
@@ -345,7 +353,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111100 and operation & 0b111 == 0b101:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRHS {hex(destination)}"
@@ -354,7 +362,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111101 and operation & 0b111 == 0b111:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRID {hex(destination)}"
@@ -363,7 +371,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111100 and operation & 0b111 == 0b111:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRIE {hex(destination)}"
@@ -372,7 +380,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111100 and operation & 0b111 == 0b100:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRLT {hex(destination)}"
@@ -381,7 +389,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111100 and operation & 0b111 == 0b010:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRMI {hex(destination)}"
@@ -390,7 +398,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111101 and operation & 0b111 == 0b001:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRNE {hex(destination)}"
@@ -399,7 +407,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111101 and operation & 0b111 == 0b010:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRPL {hex(destination)}"
@@ -408,7 +416,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111101 and operation & 0b111 == 0b110:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRTC {hex(destination)}"
@@ -417,7 +425,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111100 and operation & 0b111 == 0b110:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRTS {hex(destination)}"
@@ -426,7 +434,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111101 and operation & 0b111 == 0b011:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRVC {hex(destination)}"
@@ -435,7 +443,7 @@ class InstructionDecoder:
         elif (operation >> 10) & 0b111111 == 0b111100 and operation & 0b111 == 0b011:
             destination = (operation >> 3) & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRVS {hex(destination)}"
@@ -445,7 +453,7 @@ class InstructionDecoder:
             destination = (operation) & 0b111
             source = operation >> 3 & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRBC {destination}, {hex(source)}"
@@ -455,7 +463,7 @@ class InstructionDecoder:
             destination = (operation) & 0b111
             source = operation >> 3 & 0b1111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BRBS {destination}, {hex(source)}"
@@ -463,7 +471,7 @@ class InstructionDecoder:
         # BREAK
         elif (operation) & 0b1111111111111111 == 0b1001010110011000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BREAK"
@@ -473,7 +481,7 @@ class InstructionDecoder:
         ) & 0b111111111 == 0b100101000 and operation & 0b1111 == 0b1000:
             destination = (operation >> 4) & 0b111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BSET {destination}"
@@ -482,7 +490,7 @@ class InstructionDecoder:
             destination = (operation >> 4) & 0b11111
             source = operation & 0b111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"BST R{destination}, {source}"
@@ -504,7 +512,7 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 4) | low
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"EOR R{destination}, R{source}"
@@ -534,7 +542,7 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 4) | low
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"CP R{destination}, R{source}"
@@ -545,7 +553,7 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 4) | low
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"CPC R{destination}, R{source}"
@@ -556,7 +564,7 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 4) | low
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"CPI R{destination}, {source}"
@@ -567,7 +575,7 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 4) | low
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"CPSE R{destination}, R{source}"
@@ -575,21 +583,21 @@ class InstructionDecoder:
         elif (operation >> 9) & 0b1111111 == 0b1001010 and operation & 0b1111 == 0b1010:
             destination = (operation >> 4) & 0b11111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"DEC R{destination}"
         # EICALL
         elif (operation) & 0b1111111111111111 == 0b1001010100011001:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"EICALL"
         # EIJMP
         elif (operation) & 0b1111111111111111 == 0b1001010000011001:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"EIJMP"
@@ -601,7 +609,7 @@ class InstructionDecoder:
             destination = (operation >> 4) & 0b111
             source = operation & 0b111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"FMUL R{destination}, R{source}"
@@ -613,7 +621,7 @@ class InstructionDecoder:
             destination = (operation >> 4) & 0b111
             source = operation & 0b111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"FMULS R{destination}, R{source}"
@@ -625,7 +633,7 @@ class InstructionDecoder:
             destination = (operation >> 4) & 0b111
             source = operation & 0b111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"FMULSU R{destination}, R{source}"
@@ -633,7 +641,7 @@ class InstructionDecoder:
         # ICALL
         elif (operation) & 0b1111111111111111 == 0b1001010100001001:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"ICALL"
@@ -641,7 +649,7 @@ class InstructionDecoder:
         # IJUMP
         elif (operation) & 0b1111111111111111 == 0b1001010000001001:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"IJUMP"
@@ -653,35 +661,23 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 4) | low
             if not self.DefinitionMode:
-                # self.alu.SUB(destination, source)
-                pass
+                self.alu.IN(destination, source)
 
-            return f"IN R{destination}, {source}"
+            return f"IN R{destination}, {hex(source)}"
         # INC
         elif (operation >> 9) & 0b1111111 == 0b1001010 and operation & 0b1111 == 0b0011:
             destination = (operation >> 4) & 0b11111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"INC R{destination}"
-
-        # LDI
-        elif (operation >> 12) & 0b1111 == 0b1110:
-            destination = (operation >> 4) & 0b1111
-            high = (operation >> 8) & 0b1111
-            low = (operation) & 0b1111
-            source = (high << 4) | low
-            if not self.DefinitionMode:
-                self.alu.LDI(destination, source)
-
-            return f"LDI R{destination}, {source}"
 
         # LSR
         elif (operation >> 9) & 0b1111111 == 0b1001010 and operation & 0b1111 == 0b0110:
             destination = (operation >> 4) & 0b11111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"LSR R{destination}"
@@ -691,11 +687,12 @@ class InstructionDecoder:
             destination = (operation >> 4) & 0b11111
             high = (operation >> 9) & 0b1
             low = (operation) & 0b1111
-            source = (high << 5) | low
+            source = (high << 4) | low
+            
             if not self.DefinitionMode:
-                self.alu.ADC(destination, source)
+                self.alu.MOV(destination, source)
 
-            return f"MOV R{destination}, {source}"
+            return f"MOV R{destination}, R{source}"
 
         # MOVW
         elif (operation >> 8) & 0b11111111 == 0b00000001:
@@ -741,7 +738,7 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 5) | low
             if not self.DefinitionMode:
-                self.alu.ADC(destination, source)
+                self.alu.OR(destination, source)
 
             return f"OR R{destination}, {source}"
 
@@ -752,37 +749,35 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 4) | low
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"ORI/SBR R{destination}, {source}"
 
         # OUT
         elif (operation >> 11) & 0b11111 == 0b10111:
-            destination = (operation >> 4) & 0b11111
             high = (operation >> 9) & 0b11
             low = (operation) & 0b1111
-            source = (high << 4) | low
+            destination = (high << 4) | low
+            source = (operation >> 4) & 0b11111
             if not self.DefinitionMode:
-                # self.alu.SUB(destination, source)
-                pass
+                self.alu.OUT(destination, source)
 
-            return f"OUT R{destination}, {source}"
+            return f"OUT {hex(destination)}, R{source}"
 
         # POP
         elif (operation >> 9) & 0b1111111 == 0b1001000 and operation & 0b1111 == 0b1111:
-            destination = (operation >> 4) & 0b1111
+            destination = ((operation >> 4) & 0b1111) + 16
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
-                pass
+                self.alu.POP(destination)
 
             return f"POP R{destination}"
 
         # PUSH
         elif (operation >> 9) & 0b1111111 == 0b1001001 and operation & 0b1111 == 0b1111:
-            destination = (operation >> 4) & 0b1111
+            destination = (operation >> 4) & 0b1111 + 16
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+                self.alu.PUSH(destination)
                 pass
 
             return f"PUSH R{destination}"
@@ -791,7 +786,7 @@ class InstructionDecoder:
         elif (operation >> 12) & 0b1111 == 0b1101:
             destination = (operation) & 0b111111111111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"RCALL {hex(destination)}"
@@ -799,33 +794,35 @@ class InstructionDecoder:
         # RET
         elif (operation) & 0b1111111111111111 == 0b1001010100001000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
-                pass
+                self.alu.RET()
 
             return f"RET"
 
         # RETI
         elif (operation) & 0b1111111111111111 == 0b1001010100011000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"RETI"
 
         # RJMP
-        elif (operation >> 12) & 0b1111 == 0b1101:
-            destination = (operation) & 0b111111111111
+        elif (operation >> 12) & 0b1111 == 0b1100:
+            KKK = (operation) & 0b111111111111
+            if KKK >> 11 & 0b1 == 0b1:
+                destination = int(f"-{self.flip_binary(format(int(KKK), 'b').zfill(12))}", 2)
+            else:
+                destination = KKK
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
-                pass
+                self.alu.RJMP(destination)
 
-            return f"RJMP {hex(destination)}"
+            return f"RJMP {destination}"
 
         # ROR
         elif (operation >> 9) & 0b1111111 == 0b1001010 and operation & 0b1111 == 0b0111:
             destination = (operation >> 4) & 0b11111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"ROR R{destination}"
@@ -848,7 +845,7 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 4) | low
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SBCI R{destination}, {source}"
@@ -893,7 +890,7 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 4) | low
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SBIW R{destination}, {source}"
@@ -903,7 +900,7 @@ class InstructionDecoder:
             destination = (operation >> 4) & 0b11111
             source = operation & 0b111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SBRC R{destination}"
@@ -913,7 +910,7 @@ class InstructionDecoder:
             destination = (operation >> 4) & 0b11111
             source = operation & 0b111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SBRS R{destination}"
@@ -937,7 +934,7 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 4) | low
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SUBI R{destination}, {source}"
@@ -946,7 +943,7 @@ class InstructionDecoder:
         elif (operation >> 9) & 0b1111111 == 0b1001010 and operation & 0b1111 == 0b0010:
             destination = (operation >> 4) & 0b11111
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"SWAP R{destination}"
@@ -954,7 +951,7 @@ class InstructionDecoder:
         # WDR
         elif (operation) & 0b1111111111111111 == 0b1001010110101000:
             if not self.DefinitionMode:
-                # self.alu.ADD(destination, source)
+
                 pass
 
             return f"WDR"
@@ -965,3 +962,5 @@ class InstructionDecoder:
                 raise ValueError("Unknown OPCODE")
             else:
                 return "Unknown OPCODE"
+    def flip_binary(self, value):
+        return ''.join('1' if bit == '0' else '0' for bit in value)

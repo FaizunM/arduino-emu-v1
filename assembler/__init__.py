@@ -1,4 +1,5 @@
 from assembler.instruction import Instruction
+import re
 
 # .byte	1 byte	Simpan 8-bit data
 # .half	2 byte	Simpan 16-bit data (kadang disebut .hword)
@@ -37,6 +38,13 @@ class Assembler:
 
         self.compile_address = 0x0
 
+    def just_value(self, value):
+        if str(value).startswith("0x"):
+            return int(value, 16)
+        elif str(value).isdigit():
+            return int(value)
+        return value
+
     def encode_line(self, line):
         line = line.split(";")[0]
         opcode = line.split(" ")[0].upper()
@@ -44,6 +52,28 @@ class Assembler:
 
         filter_symbol = []
         for oprnd in operands:
+            if str(oprnd).startswith("HIGH"):
+                string = re.findall(r"\((.*?)\)", oprnd)[0]
+
+                if string.startswith("0x"):
+                    HIGH = format(int(string, 16), "X")
+                    filter_symbol.append(HIGH[: (len(HIGH) // 2)])
+                elif string in self.symbol_table:
+                    founded = format(int(self.symbol_table[f"{string}"]["value"]), "X")
+                    split_val = founded[: (len(founded) // 2)]
+                    filter_symbol.append(hex(self.just_value(int(split_val, 16))))
+
+            elif str(oprnd).startswith("LOW"):
+                string = re.findall(r"\((.*?)\)", oprnd)[0]
+
+                if string.startswith("0x"):
+                    LOW = format(int(string, 16), "X")
+                    filter_symbol.append(LOW[(len(LOW) // 2) :])
+                elif string in self.symbol_table:
+                    founded = format(int(self.symbol_table[f"{string}"]["value"]), "X")
+                    split_val = founded[(len(founded) // 2) :]
+                    filter_symbol.append(hex(self.just_value(int(split_val, 16))))
+
             if oprnd in self.symbol_table:
                 if self.symbol_table[oprnd]["section"] == ".data":
                     filter_symbol.append(int(self.symbol_table[f"{oprnd}"]["value"]))
@@ -59,7 +89,7 @@ class Assembler:
             front = result[:16]
             back = result[16:]
             swap = int(back + front, 2)
-            return format(swap, 'b')
+            return format(swap, "b")
         else:
             return result
 

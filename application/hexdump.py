@@ -3,7 +3,7 @@ class HexDump:
         self.ybytes = []
         self.y_decoded = []
         self.array_block = array_block
-        
+
     def generate(self, start, stop):
         xbytes = []
         x_decoded = []
@@ -47,7 +47,7 @@ class HexDump:
             render_root.addstr(
                 num_line,
                 2,
-                f"{format(((address_pointer) + (num_line - 3) * 16), 'X').zfill(8)}",
+                f"{format(((address_pointer) + (num_line - 3)) * 16, 'X').zfill(8)}",
             )
             render_root.addstr(num_line, 12, "-->")
             render_root.addstr(

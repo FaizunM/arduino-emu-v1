@@ -1,4 +1,4 @@
-from application import MainApp
+from application.old import MainApp
 import curses
 
 if __name__ == "__main__":

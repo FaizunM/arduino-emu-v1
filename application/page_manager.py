@@ -2,26 +2,29 @@ from application.pages.monitor import MonitorWindow
 from application.pages.flash import FlashWindow
 from application.pages.SRAM import SRAMWindow
 from application.pages.eeprom import EEPROMWindow
+from application.pages.registers import RegisterWindow
 
 
 class PageManager:
-    def __init__(self, stdscr, PC, flash, SRAM, EEPROM):
+    def __init__(self, stdscr, PC, flash, SRAM, EEPROM, ins_register):
         self.PC = PC
         self.flash = flash
         self.SRAM = SRAM
         self.EEPROM = EEPROM
+        self.ins_register = ins_register
 
         self.stdscr = stdscr
         self.height, self.width = self.stdscr.getmaxyx()
 
         self.pages = [
             MonitorWindow(self.height - 4, self.width, 3, 0, self.PC, self.flash),
-            FlashWindow(self.height - 4, self.width, 3, 0, self.flash),
             SRAMWindow(self.height - 4, self.width, 3, 0, self.SRAM),
             EEPROMWindow(self.height - 4, self.width, 3, 0, self.EEPROM),
+            FlashWindow(self.height - 4, self.width, 3, 0, self.flash),
+            RegisterWindow(self.height - 4, self.width, 3, 0, self.ins_register),
         ]
         self.current_index = 0
-        self.show_header = True
+        self.show_header = False
         
         for page in self.pages:
             page.window.resize(self.height - 1, self.width)

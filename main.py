@@ -6,10 +6,4 @@ def main(stdscr):
     app.run()
     
 if __name__ == "__main__":
-    try:
-        curses.wrapper(main)
-    except KeyboardInterrupt:
-        print("Exit by Keyboard Interrupt")
-
-    except Exception as e:
-        print(f"ERROR -> {str(e)}")
+    curses.wrapper(main)

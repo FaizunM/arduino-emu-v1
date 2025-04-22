@@ -1,4 +1,5 @@
 from assembler.opcode_list import OPCODE, SPECIAL_REGISTER, REGISTER_COUNT
+import re
 
 
 class Instruction:
@@ -18,17 +19,11 @@ class Instruction:
             "CBR",
         ]:
             mask1 = self.value_pusher(
-                OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(4)
+                OPCODE[self.opcode], "d", self.halfreg2bin(self.operands[0]).zfill(4)
             )
-            val2 = None
-            if str(self.operands[1]).startswith("0x"):
-                mask2 = self.value_pusher(
-                    mask1, "K", format(int(self.operands[1], 16), "b").zfill(8)
-                )
-            else:
-                mask2 = self.value_pusher(
-                    mask1, "K", self.formater_value(self.operands[1]).zfill(8)
-                )
+            mask2 = self.value_pusher(
+                mask1, "K", self.formater_value(self.operands[1]).zfill(8)
+            )
             return mask2.replace(" ", "")
 
         elif self.opcode in [
@@ -138,7 +133,6 @@ class Instruction:
             return mask1.replace(" ", "")
 
         elif self.opcode in ["CALL", "JMP"]:
-
             mask2 = self.value_pusher(
                 OPCODE[self.opcode],
                 "k",
@@ -234,14 +228,16 @@ class Instruction:
                 "r",
                 self.reg2bin(
                     self.operands[1],
-                ).zfill(4),
+                ).zfill(5),
             )
             return mask2.replace(" ", "")
         elif self.opcode in ["RCALL", "RJMP"]:
+            print(self.relative_value(self.operands[0], 12))
+            
             mask2 = self.value_pusher(
                 OPCODE[self.opcode],
                 "k",
-                self.formater_value(self.operands[0]).zfill(12),
+                self.relative_value(self.operands[0], 12),
             )
             return mask2.replace(" ", "")
         elif self.opcode in ["TST"]:
@@ -287,16 +283,21 @@ class Instruction:
     def formater_value(self, value):
         if str(value).startswith("0x"):
             return format(int(value, 16), "b")
-        if str(value).isdigit():
+        elif str(value).isdigit():
             return format(int(value), "b")
-            
 
     def reg2bin(self, value: str):
         num = int(value.replace("R", "").replace("r", ""))
 
         if num > REGISTER_COUNT:
             raise ValueError("Register out of range")
+        return format(num, "b")
+    
+    def halfreg2bin(self, value: str):
+        num = int(value.replace("R", "").replace("r", "")) - 16
 
+        if num < 0 or num > REGISTER_COUNT:
+            raise ValueError("Register out of range")
         return format(num, "b")
 
     def value_pusher(self, text, character, value):
@@ -311,3 +312,14 @@ class Instruction:
                 array.append(text[idx])
 
         return "".join(array)
+
+    def relative_value(self, value, padding):
+        clear = value.replace('-', '')
+        if str(value).startswith('-'):
+            return self.flip_binary(format(int(clear), 'b').zfill(padding))
+        else:
+            return format(int(clear), 'b').zfill(padding)
+            
+            
+    def flip_binary(self, value):
+        return ''.join('1' if bit == '0' else '0' for bit in value)

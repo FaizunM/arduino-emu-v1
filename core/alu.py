@@ -1,6 +1,7 @@
 from core.instructions.instruction_register import InstructionRegister
 from core.memory.sram import SRAM
 from core.instructions.status_register import StatusRegister
+from core.instructions.stack_pointer import StackPointer
 
 
 class ALU:
@@ -37,6 +38,7 @@ class ALU:
         self.SREG.status["C"] = C
 
         self.ins_register.set(destination, result)
+        self.PC.address += 1
 
     def ADD(self, destination: int, source: int):
         dest = self.ins_register.get(destination)
@@ -66,6 +68,7 @@ class ALU:
         self.SREG.status["C"] = C
 
         self.ins_register.set(destination, result)
+        self.PC.address += 1
 
     def SUB(self, destination: int, source: int):
         dest = self.ins_register.get(destination)
@@ -94,8 +97,8 @@ class ALU:
         self.SREG.status["Z"] = Z
         self.SREG.status["C"] = C
         self.ins_register.set(destination, result)
-        
-        
+        self.PC.address += 1
+
     def SBC(self, destination: int, source: int):
         dest = self.ins_register.get(destination)
         src = self.ins_register.get(source)
@@ -121,9 +124,114 @@ class ALU:
         self.SREG.status["S"] = S
         self.SREG.status["Z"] = Z
         self.SREG.status["C"] = C
+        self.PC.address += 1
 
     def LDI(self, destination: int, value: int):
         self.ins_register.set(destination, value)
+        self.PC.address += 1
 
-    def CALL(self, destination: int):
-        pass
+    def JMP(self, destination: int):
+        self.PC.address = destination
+
+    def MOV(self, destination, source):
+        value = self.ins_register.get(source)
+        self.sram.set(destination, value)
+        self.PC.address += 1
+
+    def OR(self, destination, source):
+        dest_val = self.ins_register.get(destination)
+        src_val = self.ins_register.get(source)
+        result = dest_val | src_val
+        self.ins_register.set(destination, result)
+        self.PC.address += 1
+
+    def AND(self, destination, source):
+        dest_val = self.ins_register.get(destination)
+        src_val = self.ins_register.get(source)
+        result = dest_val & src_val
+        self.ins_register.set(destination, result)
+        self.PC.address += 1
+
+    def OUT(self, destination, source):
+        value = self.ins_register.get(source)
+        self.sram.set(destination, value)
+        self.PC.address += 1
+
+    def CALL(self, destination):
+        SPL = self.sram.get(0x3D)
+        SPH = self.sram.get(0x3E)
+        SP = int("".join([format(SPH, "X"), format(SPL, "X")]), 16)
+
+        SP = SP - 1
+        self.sram.set(SP, self.PC.address + 1)
+        self.PC.address = destination
+        hex_string = format(SP, "X").zfill(4)
+
+        self.sram.set(0x3D, int(hex_string[2:], 16))
+        self.sram.set(0x3E, int(hex_string[:2], 16))
+
+    def RET(self):
+        SPL = self.sram.get(0x3D)
+        SPH = self.sram.get(0x3E)
+        SP = int("".join([format(SPH, "X"), format(SPL, "X")]), 16)
+
+        address = self.sram.get(SP)
+        SP = SP + 1
+
+        self.PC.address = address
+
+        hex_string = format(SP, "X").zfill(4)
+        self.sram.set(0x3D, int(hex_string[2:], 16))
+        self.sram.set(0x3E, int(hex_string[:2], 16))
+
+    def RJMP(self, destination):
+        self.PC.address = self.PC.address + destination + 1
+
+    def IN(self, destination, source):
+        value = self.sram.get(source)
+
+        self.ins_register.set(destination, value)
+        self.PC.address += 1
+
+    def PUSH(self, source):
+        SPL = self.sram.get(0x3D)
+        SPH = self.sram.get(0x3E)
+        SP = int("".join([format(SPH, "X"), format(SPL, "X")]), 16)
+
+        SP = SP - 1
+        value = self.ins_register.get(source)
+        self.sram.set(SP, value)
+
+        hex_string = format(SP, "X").zfill(4)
+
+        self.sram.set(0x3D, int(hex_string[2:], 16))
+        self.sram.set(0x3E, int(hex_string[:2], 16))
+
+        self.PC.address += 1
+
+    def POP(self, destination):
+        SPL = self.sram.get(0x3D)
+        SPH = self.sram.get(0x3E)
+        SP = int("".join([format(SPH, "X"), format(SPL, "X")]), 16)
+
+        SP = SP + 1
+        value = self.sram.get(SP)
+
+        self.ins_register.set(destination, value)
+
+        hex_string = format(SP, "X").zfill(4)
+        self.sram.set(0x3D, int(hex_string[2:], 16))
+        self.sram.set(0x3E, int(hex_string[:2], 16))
+        self.PC.address += 1
+
+    def STS(self, destination, source):
+        value = self.ins_register.get(source)
+        
+        self.sram.set(destination, value)
+        self.PC.address += 1
+
+    def LDS(self, destination, source):
+        value = self.sram.get(source)
+        self.ins_register.set(destination, value)
+        self.PC.address += 1
+        

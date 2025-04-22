@@ -4,8 +4,8 @@ from core.program_counter import ProgramCounter
 from core.memory.sram import SRAM
 from core.memory.flash import Flash
 from core.memory.eeprom import EEPROM
-from application.hex_dump import HexDump
-from application.monitor import Monitor
+from application.old.hex_dump import HexDump
+from application.old.monitor import Monitor
 import os
 
 
