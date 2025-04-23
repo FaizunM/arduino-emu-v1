@@ -79,10 +79,13 @@ class Assembler:
                     filter_symbol.append(int(self.symbol_table[f"{oprnd}"]["value"]))
             if oprnd in self.symbol_table:
                 if self.symbol_table[oprnd]["section"] == ".text":
-                    filter_symbol.append(int(self.symbol_table[f"{oprnd}"]["address"]))
+                    if opcode in ['BRBC', 'BRBS', 'BRCC', 'BRCS', 'BREQ', 'BRGE', 'BRHC', 'BRHS', 'BRID', 'BRIE', 'BRLO', 'BRLT', 'BRMI', 'BRNE', 'BRPL', 'BRSH', 'BRTC', 'BRTS', 'BRTC', 'BRVS', 'RCALL', 'RJMP']:
+                        offset = self.compile_address - int(self.symbol_table[f"{oprnd}"]["address"])
+                        filter_symbol.append(hex(offset))
+                    else:
+                        filter_symbol.append(int(self.symbol_table[f"{oprnd}"]["address"]))
             else:
                 filter_symbol.append(oprnd)
-
         ins = Instruction(opcode, filter_symbol)
         result = ins.encode()
         if len(result) > 16:

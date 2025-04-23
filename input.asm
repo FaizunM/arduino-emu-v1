@@ -1,21 +1,17 @@
 .data
-SPL: .bytes 0x3D
-SPH: .bytes 0x3E
+SPL: .bytes 0x5D (0x3D on I/O Register)
+SPH: .bytes 0x5E (0x3E on I/O Register)
 RAMSTART: .hword 0x100
 RAMEND: .hword 0x8FF
 
 .text
-setup_SP:
-    
-
+skip:
+    LDI R16, 0x01
+    NOP
 .text
-basic:
-    LDI R18, 0x5
-    LDI R19, 0x6
-    ADD R18, R19
-    PUSH R18
-    POP R18
-    RET
+noskip:
+    LDI R17, 0x01
+    NOP
 
 .text
 _start:
@@ -25,9 +21,8 @@ _start:
     LDI R16, LOW(RAMEND)
     OUT SPL, R16
     ; BASIC CODE
-    CALL basic
-    LDI R23, 0x30
-    STS 0x100, R23
-    LDS R17, 0x100
+    LDI R31, 0x5
+    LDI R30, 0xe
+    LPM
     NOP
     JMP 0x7FFF

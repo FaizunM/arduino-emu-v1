@@ -63,6 +63,8 @@ OPCODE = {
     "LDS": "1001000ddddd0000kkkkkkkkkkkkkkkk",
     "LSL": "000011dddddddddd",
     "LSR": "1001010ddddd0110",
+    "LD": "1001000dddddiiii",
+    "LD": " 1001001rrrrriiii",
     "MOV": "001011rdddddrrrr",
     "MOVW": "00000001ddddrrrr",
     "MUL": "100111rdddddrrrr",
@@ -106,13 +108,21 @@ OPCODE = {
     "SWAP": "1001010ddddd0010",
     "TST": "001000dddddddddd",
     "WDR": "1001010110101000",
+    "LPM": "1001010111001000",
+    "LPM1": "1001000dddddiiii",
 }
 # CBR, ELPM, LD (LDD), LPM, SPM, ST
 
 REGISTER_COUNT = 31
 
 SPECIAL_REGISTER = {
-    "X": "01",
-    "Y": "10",
-    "Z": "11",
+    "X": "1100",
+    "X+": "1101",
+    "-X": "1110",
+    "Y": "1000",
+    "Y+": "1001",
+    "-Y": "1010",
+    "Z": "0000",
+    "Z+": "0001",
+    "-Z": "0010",
 }

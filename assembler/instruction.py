@@ -1,5 +1,4 @@
-from assembler.opcode_list import OPCODE, SPECIAL_REGISTER, REGISTER_COUNT
-import re
+from assembler.opcode_list import OPCODE, REGISTER_COUNT, SPECIAL_REGISTER
 
 
 class Instruction:
@@ -58,7 +57,9 @@ class Instruction:
             return mask2.replace(" ", "")
         elif self.opcode in ["ADIW", "SBIW"]:
             mask1 = self.value_pusher(
-                OPCODE[self.opcode], "d", SPECIAL_REGISTER[self.operands[0]]
+                OPCODE[self.opcode],
+                "d",
+                self.reg2bin_special(self.operands[0], 24).zfill(2),
             )
             mask2 = self.value_pusher(
                 mask1, "K", format(int(self.operands[1], 16), "b").zfill(6)
@@ -184,10 +185,12 @@ class Instruction:
             return mask2.replace(" ", "")
         elif self.opcode in ["FMUL", "FMULS", "FMULSU", "MULSU"]:
             mask1 = self.value_pusher(
-                OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(3)
+                OPCODE[self.opcode],
+                "d",
+                self.reg2bin_special(self.operands[0], 16).zfill(3),
             )
             mask2 = self.value_pusher(
-                mask1, "r", self.reg2bin(self.operands[1]).zfill(3)
+                mask1, "r", self.reg2bin_special(self.operands[1], 16).zfill(3)
             )
             return mask2.replace(" ", "")
         elif self.opcode in ["IN"]:
@@ -233,7 +236,7 @@ class Instruction:
             return mask2.replace(" ", "")
         elif self.opcode in ["RCALL", "RJMP"]:
             print(self.relative_value(self.operands[0], 12))
-            
+
             mask2 = self.value_pusher(
                 OPCODE[self.opcode],
                 "k",
@@ -245,6 +248,32 @@ class Instruction:
                 OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(12)
             )
             return mask2.replace(" ", "")
+        elif self.opcode in ["LD"]:
+            mask1 = self.value_pusher(
+                OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(5)
+            )
+            operand = SPECIAL_REGISTER[self.operands[1]]
+            mask2 = self.value_pusher(mask1, "i", operand)
+            return mask2.replace(" ", "")
+        elif self.opcode in ["ST"]:
+            mask1 = self.value_pusher(OPCODE[self.opcode], "i", operand)
+            mask2 = self.value_pusher(mask2, 
+                 "d", self.reg2bin(self.operands[1]).zfill(5)
+            )
+            operand = SPECIAL_REGISTER[self.operands[1]]
+            return mask2.replace(" ", "")
+        elif self.opcode in ["LPM"]:
+            if self.operands[0] == "":
+                return OPCODE["LPM"]
+            mask1 = self.value_pusher(
+                OPCODE["LPM1"], "d", self.reg2bin(self.operands[0]).zfill(5)
+            )
+            if self.operands[1] == "Z":
+                mask2 = self.value_pusher(mask1, "i", "0100")
+            if self.operands[1] == "Z+":
+                mask2 = self.value_pusher(mask1, "i", "0101")
+            return mask2.replace(" ", "")
+
         elif self.opcode in [
             "BREAK",
             "CLC",
@@ -292,7 +321,14 @@ class Instruction:
         if num > REGISTER_COUNT:
             raise ValueError("Register out of range")
         return format(num, "b")
-    
+
+    def reg2bin_special(self, value: str, base_start):
+        num = int(value.replace("R", "").replace("r", "")) - base_start
+
+        if num > REGISTER_COUNT:
+            raise ValueError("Register out of range")
+        return format(num, "b")
+
     def halfreg2bin(self, value: str):
         num = int(value.replace("R", "").replace("r", "")) - 16
 
@@ -314,12 +350,11 @@ class Instruction:
         return "".join(array)
 
     def relative_value(self, value, padding):
-        clear = value.replace('-', '')
-        if str(value).startswith('-'):
-            return self.flip_binary(format(int(clear), 'b').zfill(padding))
+        clear = value.replace("-", "")
+        if str(value).startswith("-"):
+            return self.flip_binary(format(int(clear), "b").zfill(padding))
         else:
-            return format(int(clear), 'b').zfill(padding)
-            
-            
+            return format(int(clear), "b").zfill(padding)
+
     def flip_binary(self, value):
-        return ''.join('1' if bit == '0' else '0' for bit in value)
+        return "".join("1" if bit == "0" else "0" for bit in value)

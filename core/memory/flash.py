@@ -1,4 +1,4 @@
-import os, struct, math
+import os, struct
 
 
 class Flash:
@@ -8,7 +8,7 @@ class Flash:
 
     def load_flash(self):
         values = []
-        with open(os.path.abspath("flash.bin"), "rb") as f:
+        with open(os.path.abspath("firmware.bin"), "rb") as f:
             while True:
                 chunks = f.read(4)
                 if not chunks:

@@ -6,15 +6,16 @@ from core.memory.flash import Flash
 from core.memory.eeprom import EEPROM
 from application.old.hex_dump import HexDump
 from application.old.monitor import Monitor
+from core.instructions.status_register import StatusRegister
 import os
-
 
 class MainApp:
     def __init__(self):
         self.ins_register = InstructionRegister()
         self.flash = Flash()
         self.SRAM = SRAM()
-        self.PC = ProgramCounter(self.flash, self.ins_register, self.SRAM)
+        self.SREG = StatusRegister()
+        self.PC = ProgramCounter(self.flash, self.ins_register, self.SRAM, self.SREG)
         self.EEPROM = EEPROM()
 
     def read_SRAM(self):

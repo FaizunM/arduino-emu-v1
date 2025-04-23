@@ -2,12 +2,13 @@ import curses
 
 
 class RegisterWindow:
-    def __init__(self, height, width, start_y, start_x, ins_register):
+    def __init__(self, height, width, start_y, start_x, ins_register, SREG):
         self.window = curses.newwin(height, width, start_y, start_x)
         self.window.box()
         self.height, self.width = self.window.getmaxyx()
 
         self.ins_register = ins_register
+        self.SREG = SREG
         self.register_pointer = 0x0
 
         self.show_register = False
@@ -29,16 +30,27 @@ class RegisterWindow:
                 f"[{'•' if idx == self.selected_menu else ' '}] {menu} ",
                 curses.A_REVERSE if idx == self.menu_highlight else curses.A_BOLD,
             )
-            
+
         self.window.addstr(1, 24, f"-->")
 
         if self.selected_menu == 0x0:
             for y in range(0 + 1, self.height):
+                if y >= 31:
+                    continue
                 self.window.addstr(
                     y,
                     30,
                     f"R{(y - 1) + self.register_pointer}  -->  {hex(self.ins_register.get((y - 1) + self.register_pointer))}",
                 )
+        if self.selected_menu == 0x1:
+            self.window.addstr(1, 30, f"[ 7 ] I  -->  {self.SREG.status['I']}")
+            self.window.addstr(2, 30, f"[ 6 ] T  -->  {self.SREG.status['T']}")
+            self.window.addstr(3, 30, f"[ 5 ] H  -->  {self.SREG.status['H']}")
+            self.window.addstr(4, 30, f"[ 4 ] S  -->  {self.SREG.status['S']}")
+            self.window.addstr(5, 30, f"[ 3 ] V  -->  {self.SREG.status['V']}")
+            self.window.addstr(6, 30, f"[ 2 ] N  -->  {self.SREG.status['N']}")
+            self.window.addstr(7, 30, f"[ 1 ] Z  -->  {self.SREG.status['Z']}")
+            self.window.addstr(8, 30, f"[ 0 ] C  -->  {self.SREG.status['C']}")
 
         self.window.noutrefresh()
 
@@ -63,7 +75,6 @@ class RegisterWindow:
 
             if self.selected_menu != None:
                 if self.selected_menu == 0x0:
-
                     if (
                         not (self.register_pointer + (self.height - 2)) + 1
                         > len(self.ins_register.registers) - 1

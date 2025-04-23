@@ -4,6 +4,7 @@ from core.memory.sram import SRAM
 from core.memory.flash import Flash
 from core.memory.eeprom import EEPROM
 from application.page_manager import PageManager
+from core.instructions.status_register import StatusRegister
 import curses
 
 
@@ -12,7 +13,8 @@ class MyApplication:
         self.ins_register = InstructionRegister()
         self.flash = Flash()
         self.SRAM = SRAM()
-        self.PC = ProgramCounter(self.flash, self.ins_register, self.SRAM)
+        self.SREG: StatusRegister = StatusRegister()
+        self.PC = ProgramCounter(self.flash, self.ins_register, self.SRAM, self.SREG)
         self.EEPROM = EEPROM()
 
         self.stdscr = stdscr
@@ -27,7 +29,7 @@ class MyApplication:
         self.height, self.width = self.stdscr.getmaxyx()
 
         self.page_manager = PageManager(
-            self.stdscr, self.PC, self.flash, self.SRAM, self.EEPROM, self.ins_register
+            self.stdscr, self.PC, self.flash, self.SRAM, self.EEPROM, self.ins_register, self.SREG
         )
 
     def draw_bottom_bar(self):
@@ -60,9 +62,9 @@ class MyApplication:
             2,
             1,
             f"On Process ->  {format(self.flash.get(self.PC.address), 'b').zfill(32)} ",
-        )        
+        )
         self.draw_bottom_bar()
-        
+
         self.stdscr.noutrefresh()
         self.page_manager.draw()
 

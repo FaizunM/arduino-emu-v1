@@ -3,10 +3,10 @@ from core.instructions.instruction_decoder import InstructionDecoder
 
 
 class ProgramCounter:
-    def __init__(self, flash: Flash, ins_register, SRAM):
+    def __init__(self, flash: Flash, ins_register, SRAM, SREG):
         self.address = 0x0
         self.flash: Flash = flash
-        self.ins_decoder = InstructionDecoder(ins_register, SRAM, self, DefinitionMode=False)
+        self.ins_decoder = InstructionDecoder(ins_register, SRAM, self, SREG, DefinitionMode=False)
         self.Debug = ''
 
 
