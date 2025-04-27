@@ -1,21 +1,16 @@
-from core.instructions.instruction_register import InstructionRegister
-from core.alu import ALU
+from core.data_memory_map import DataMemoryMap
 from core.program_counter import ProgramCounter
-from core.memory.sram import SRAM
 from core.memory.flash import Flash
 from core.memory.eeprom import EEPROM
 from application.old.hex_dump import HexDump
 from application.old.monitor import Monitor
-from core.memory.status_register import StatusRegister
 import os
 
 class MainApp:
     def __init__(self):
-        self.ins_register = InstructionRegister()
         self.flash = Flash()
-        self.SRAM = SRAM()
-        self.SREG = StatusRegister()
-        self.PC = ProgramCounter(self.flash, self.ins_register, self.SRAM, self.SREG)
+        self.DMEM = DataMemoryMap()
+        self.PC = ProgramCounter(self.flash, self.DMEM)
         self.EEPROM = EEPROM()
 
     def read_SRAM(self):

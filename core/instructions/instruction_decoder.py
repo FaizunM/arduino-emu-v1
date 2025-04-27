@@ -3,11 +3,11 @@ from core.alu import ALU
 
 class InstructionDecoder:
     def __init__(
-        self, ins_register=None, SRAM=None, PC=None, SREG=None, DefinitionMode=False
+        self, PC=None, DMEM=None, DefinitionMode=False
     ):
         self.DefinitionMode = DefinitionMode
         if not DefinitionMode:
-            self.alu = ALU(ins_register, SRAM, PC, SREG)
+            self.alu = ALU(PC, DMEM)
 
     def decode(self, operation: int):
         if operation > 0xFFFF:

@@ -4,14 +4,14 @@ import curses
 
 
 class SRAMWindow(Page):
-    def __init__(self, height, width, pos_y, pos_x, SRAM):
+    def __init__(self, height, width, pos_y, pos_x, DMEM):
         super().__init__(height, width, pos_y, pos_x)
-        self.SRAM = SRAM
+        self.DMEM = DMEM
 
         self.address_pointer = 0x0
         self.height, self.width = self.window.getmaxyx()
         
-        self.hex_dump = HexDump(self.SRAM.memory)
+        self.hex_dump = HexDump(self.DMEM.map_address)
         self.section = ''
 
     def draw(self):

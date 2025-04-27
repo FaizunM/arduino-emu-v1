@@ -2,13 +2,12 @@ import curses
 
 
 class RegisterWindow:
-    def __init__(self, height, width, start_y, start_x, ins_register, SREG):
+    def __init__(self, height, width, start_y, start_x, DMEM):
         self.window = curses.newwin(height, width, start_y, start_x)
         self.window.box()
         self.height, self.width = self.window.getmaxyx()
 
-        self.ins_register = ins_register
-        self.SREG = SREG
+        self.DMEM = DMEM
         self.register_pointer = 0x0
 
         self.show_register = False
@@ -40,17 +39,17 @@ class RegisterWindow:
                 self.window.addstr(
                     y,
                     30,
-                    f"R{(y - 1) + self.register_pointer}  -->  {hex(self.ins_register.get((y - 1) + self.register_pointer))}",
+                    f"R{(y - 1) + self.register_pointer}  -->  {hex(self.DMEM.get((y - 1) + self.register_pointer))}",
                 )
         if self.selected_menu == 0x1:
-            self.window.addstr(1, 30, f"[ 7 ] I  -->  {self.SREG.status['I']}")
-            self.window.addstr(2, 30, f"[ 6 ] T  -->  {self.SREG.status['T']}")
-            self.window.addstr(3, 30, f"[ 5 ] H  -->  {self.SREG.status['H']}")
-            self.window.addstr(4, 30, f"[ 4 ] S  -->  {self.SREG.status['S']}")
-            self.window.addstr(5, 30, f"[ 3 ] V  -->  {self.SREG.status['V']}")
-            self.window.addstr(6, 30, f"[ 2 ] N  -->  {self.SREG.status['N']}")
-            self.window.addstr(7, 30, f"[ 1 ] Z  -->  {self.SREG.status['Z']}")
-            self.window.addstr(8, 30, f"[ 0 ] C  -->  {self.SREG.status['C']}")
+            self.window.addstr(1, 30, f"[ 7 ] I  -->  {self.DMEM.get_SREG('I')}")
+            self.window.addstr(2, 30, f"[ 6 ] T  -->  {self.DMEM.get_SREG('T')}")
+            self.window.addstr(3, 30, f"[ 5 ] H  -->  {self.DMEM.get_SREG('H')}")
+            self.window.addstr(4, 30, f"[ 4 ] S  -->  {self.DMEM.get_SREG('S')}")
+            self.window.addstr(5, 30, f"[ 3 ] V  -->  {self.DMEM.get_SREG('V')}")
+            self.window.addstr(6, 30, f"[ 2 ] N  -->  {self.DMEM.get_SREG('N')}")
+            self.window.addstr(7, 30, f"[ 1 ] Z  -->  {self.DMEM.get_SREG('Z')}")
+            self.window.addstr(8, 30, f"[ 0 ] C  -->  {self.DMEM.get_SREG('C')}")
 
         self.window.noutrefresh()
 
@@ -77,7 +76,7 @@ class RegisterWindow:
                 if self.selected_menu == 0x0:
                     if (
                         not (self.register_pointer + (self.height - 2)) + 1
-                        > len(self.ins_register.registers) - 1
+                        > len(self.DMEM.get_INS_REG()) - 1
                     ):
                         self.register_pointer += 1
         else:

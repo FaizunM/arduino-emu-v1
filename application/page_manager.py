@@ -6,23 +6,21 @@ from application.pages.registers import RegisterWindow
 
 
 class PageManager:
-    def __init__(self, stdscr, PC, flash, SRAM, EEPROM, ins_register, SREG):
+    def __init__(self, stdscr, PC, flash, DMEM, EEPROM):
         self.PC = PC
         self.flash = flash
-        self.SRAM = SRAM
         self.EEPROM = EEPROM
-        self.ins_register = ins_register
-        self.SREG = SREG
+        self.DMEM = DMEM
 
         self.stdscr = stdscr
         self.height, self.width = self.stdscr.getmaxyx()
 
         self.pages = [
             MonitorWindow(self.height - 4, self.width, 3, 0, self.PC, self.flash),
-            SRAMWindow(self.height - 4, self.width, 3, 0, self.SRAM),
+            SRAMWindow(self.height - 4, self.width, 3, 0, self.DMEM),
             EEPROMWindow(self.height - 4, self.width, 3, 0, self.EEPROM),
             FlashWindow(self.height - 4, self.width, 3, 0, self.flash),
-            RegisterWindow(self.height - 4, self.width, 3, 0, self.ins_register, self.SREG),
+            RegisterWindow(self.height - 4, self.width, 3, 0, self.DMEM),
         ]
         self.current_index = 0
         self.show_header = False

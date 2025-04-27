@@ -1,20 +1,15 @@
-from core.instructions.instruction_register import InstructionRegister
 from core.program_counter import ProgramCounter
-from core.memory.sram import SRAM
 from core.memory.flash import Flash
 from core.memory.eeprom import EEPROM
 from application.page_manager import PageManager
-from core.memory.status_register import StatusRegister
+from core.data_memory_map import DataMemoryMap
 import curses
-
 
 class MyApplication:
     def __init__(self, stdscr):
-        self.ins_register = InstructionRegister()
+        self.DMEM:DataMemoryMap = DataMemoryMap()
         self.flash = Flash()
-        self.SRAM = SRAM()
-        self.SREG: StatusRegister = StatusRegister()
-        self.PC = ProgramCounter(self.flash, self.ins_register, self.SRAM, self.SREG)
+        self.PC = ProgramCounter(self.flash, self.DMEM)
         self.EEPROM = EEPROM()
 
         self.stdscr = stdscr
@@ -29,7 +24,7 @@ class MyApplication:
         self.height, self.width = self.stdscr.getmaxyx()
 
         self.page_manager = PageManager(
-            self.stdscr, self.PC, self.flash, self.SRAM, self.EEPROM, self.ins_register, self.SREG
+            self.stdscr, self.PC, self.flash, self.DMEM, self.EEPROM
         )
 
     def draw_bottom_bar(self):
