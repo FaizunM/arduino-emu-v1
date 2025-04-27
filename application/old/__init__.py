@@ -6,7 +6,7 @@ from core.memory.flash import Flash
 from core.memory.eeprom import EEPROM
 from application.old.hex_dump import HexDump
 from application.old.monitor import Monitor
-from core.instructions.status_register import StatusRegister
+from core.memory.status_register import StatusRegister
 import os
 
 class MainApp:

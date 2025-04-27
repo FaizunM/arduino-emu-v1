@@ -1066,8 +1066,7 @@ class InstructionDecoder:
 
         else:
             if not self.DefinitionMode:
-
-                raise ValueError("Unknown OPCODE")
+                self.alu.PC.address += 1
             else:
                 return "Unknown OPCODE"
 

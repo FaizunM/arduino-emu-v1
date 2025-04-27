@@ -4,7 +4,7 @@ from core.memory.sram import SRAM
 from core.memory.flash import Flash
 from core.memory.eeprom import EEPROM
 from application.page_manager import PageManager
-from core.instructions.status_register import StatusRegister
+from core.memory.status_register import StatusRegister
 import curses
 
 

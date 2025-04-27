@@ -32,13 +32,13 @@ class Flash:
                 }
 
     def get(self, address: int):
-        if address > len(self.memory) - 1:
+        if address > len(self.memory):
             raise ValueError(f"Out of memory {hex(address)}, max {hex(len(self.memory) - 1)}")
 
         return self.memory[address]
 
     def set(self, address: int, value: int):
-        if address > len(self.memory) - 1:
+        if address > len(self.memory):
             raise ValueError(f"Out of memory {hex(address)}, max {hex(len(self.memory) - 1)}")
 
         self.memory[address] = value

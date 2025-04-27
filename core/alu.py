@@ -1,9 +1,13 @@
 from core.instructions.instruction_register import InstructionRegister
 from core.memory.sram import SRAM
-from core.instructions.status_register import StatusRegister
+from core.memory.status_register import StatusRegister
 
 
 class ALU:
+    def to_signed(self, value):
+        value = value & 0xFF
+        return value if value < 0x80 else value - 0x100
+
     def __init__(self, ins_register, sram, prog_counter, SREG):
         self.sram: SRAM = sram
         self.ins_register: InstructionRegister = ins_register
@@ -15,26 +19,25 @@ class ALU:
         src = self.ins_register.get(source)
         real_result = dest + src + self.SREG.status["C"]
         result = real_result & 0xFF
+        signed_result = self.to_signed(result)
 
-        H = 1 if ((dest & 0x0F) + (src & 0x0F) + self.SREG.status["C"]) > 0x0F else 0
-        S = self.SREG.status["N"] ^ self.SREG.status["V"]
-
-        Rd7 = (dest >> 7) & 0b1
-        Rr7 = (source >> 7) & 0b1
-        R7 = (result >> 7) & 0b1
-        V = (Rd7 & Rr7 & ~R7) | (~Rd7 & ~Rr7 & R7)
-
-        N = R7
-        Z = 0 if result != 0 else 1
-
-        C = 1 if real_result > 0xFF else 0
-
-        self.SREG.status["H"] = H
-        self.SREG.status["V"] = V
-        self.SREG.status["N"] = N
-        self.SREG.status["S"] = S
-        self.SREG.status["Z"] = Z
-        self.SREG.status["C"] = C
+        if (
+            self.to_signed(dest) > 0 and self.to_signed(src) > 0 and signed_result < 0
+        ) or (
+            self.to_signed(dest) < 0 and self.to_signed(src) < 0 and signed_result > 0
+        ):
+            self.SREG.status["V"] = 1
+        else:
+            self.SREG.status["V"] = 0
+        self.SREG.status["H"] = (
+            1 if ((dest & 0xF) + (src & 0xF) + self.SREG.status["C"]) > 0xF else 0
+        )
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        self.SREG.status["C"] = 1 if real_result > 0xFF else 0
 
         self.ins_register.set(destination, result)
         self.PC.address += 1
@@ -44,27 +47,23 @@ class ALU:
         src = self.ins_register.get(source)
         real_result = dest + src
         result = real_result & 0xFF
+        signed_result = self.to_signed(result)
 
-        Rd3 = (dest >> 3) & 1
-        Rr3 = (src >> 3) & 1
-        R3 = (result >> 3) & 1
-        H = (Rd3 & Rr3) | (Rr3 & ~R3) | (R3 & ~Rd3)
-
-        Rd7 = (dest >> 7) & 1
-        Rr7 = (src >> 7) & 1
-        R7 = (result >> 7) & 1
-        V = (Rd7 & Rr7 & ~R7) | (~Rd7 & ~Rr7 & R7)
-        N = R7
-        S = N ^ V
-        Z = 1 if result == 0 else 0
-        C = 1 if real_result > 0xFF else 0
-
-        self.SREG.status["H"] = H
-        self.SREG.status["V"] = V
-        self.SREG.status["N"] = N
-        self.SREG.status["S"] = S
-        self.SREG.status["Z"] = Z
-        self.SREG.status["C"] = C
+        if (
+            self.to_signed(dest) > 0 and self.to_signed(src) > 0 and signed_result < 0
+        ) or (
+            self.to_signed(dest) < 0 and self.to_signed(src) < 0 and signed_result > 0
+        ):
+            self.SREG.status["V"] = 1
+        else:
+            self.SREG.status["V"] = 0
+        self.SREG.status["H"] = 1 if ((dest & 0xF) + (src & 0xF)) > 0xF else 0
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        self.SREG.status["C"] = 1 if real_result > 0xFF else 0
 
         self.ins_register.set(destination, result)
         self.PC.address += 1
@@ -74,81 +73,73 @@ class ALU:
         src = self.ins_register.get(source)
         real_result = dest - src
         result = real_result & 0xFF
+        signed_result = self.to_signed(result)
 
-        Rd3 = (dest >> 3) & 1
-        Rr3 = (src >> 3) & 1
-        R3 = (result >> 3) & 1
-        H = (Rd3 & Rr3) | (Rr3 & ~R3) | (R3 & ~Rd3)
+        if (
+            self.to_signed(dest) > 0 and self.to_signed(src) > 0 and signed_result < 0
+        ) or (
+            self.to_signed(dest) < 0 and self.to_signed(src) < 0 and signed_result > 0
+        ):
+            self.SREG.status["V"] = 1
+        else:
+            self.SREG.status["V"] = 0
+        self.SREG.status["H"] = 1 if ((dest & 0xF) - (src & 0xF)) > 0xF else 0
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        self.SREG.status["C"] = 1 if real_result > 0xFF else 0
 
-        Rd7 = (dest >> 7) & 1
-        Rr7 = (src >> 7) & 1
-        R7 = (result >> 7) & 1
-        V = (Rd7 & Rr7 & ~R7) | (~Rd7 & ~Rr7 & R7)
-        N = R7
-        S = N ^ V
-        Z = 1 if result == 0 else 0
-        C = 1 if real_result > 0xFF else 0
-
-        self.SREG.status["H"] = H
-        self.SREG.status["V"] = V
-        self.SREG.status["N"] = N
-        self.SREG.status["S"] = S
-        self.SREG.status["Z"] = Z
-        self.SREG.status["C"] = C
         self.ins_register.set(destination, result)
         self.PC.address += 1
 
     def SBC(self, destination: int, source: int):
         dest = self.ins_register.get(destination)
         src = self.ins_register.get(source)
-        real_result = dest + src - self.SREG.status["C"]
+        real_result = (dest - src) + self.SREG.status['C']
         result = real_result & 0xFF
+        signed_result = self.to_signed(result)
 
-        H = 1 if ((dest & 0x0F) + (src & 0x0F) + self.SREG.status["C"]) > 0x0F else 0
-        S = self.SREG.status["N"] ^ self.SREG.status["V"]
-
-        Rd7 = (dest >> 7) & 0b1
-        Rr7 = (source >> 7) & 0b1
-        R7 = (result >> 7) & 0b1
-        V = (Rd7 & Rr7 & ~R7) | (~Rd7 & ~Rr7 & R7)
-
-        N = R7
-        Z = 0 if result != 0 else 1
-
-        C = 1 if real_result > 0xFF else 0
-
-        self.SREG.status["H"] = H
-        self.SREG.status["V"] = V
-        self.SREG.status["N"] = N
-        self.SREG.status["S"] = S
-        self.SREG.status["Z"] = Z
-        self.SREG.status["C"] = C
+        if (
+            self.to_signed(dest) > 0 and self.to_signed(src) > 0 and signed_result < 0
+        ) or (
+            self.to_signed(dest) < 0 and self.to_signed(src) < 0 and signed_result > 0
+        ):
+            self.SREG.status["V"] = 1
+        else:
+            self.SREG.status["V"] = 0
+        self.SREG.status["H"] = 1 if ((dest & 0xF) - (src & 0xF)) -  self.SREG.status['C'] > 0xF else 0
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        self.SREG.status["C"] = 1 if dest >= (src + self.SREG.status['C']) else 0
         self.PC.address += 1
 
     def SBCI(self, destination: int, source: int):
         dest = self.ins_register.get(destination)
-        real_result = dest + src - self.SREG.status["C"]
+        real_result = (dest - source) + self.SREG.status['C']
         result = real_result & 0xFF
+        signed_result = self.to_signed(result)
 
-        H = 1 if ((dest & 0x0F) + (src & 0x0F) + self.SREG.status["C"]) > 0x0F else 0
-        S = self.SREG.status["N"] ^ self.SREG.status["V"]
-
-        Rd7 = (dest >> 7) & 0b1
-        Rr7 = (source >> 7) & 0b1
-        R7 = (result >> 7) & 0b1
-        V = (Rd7 & Rr7 & ~R7) | (~Rd7 & ~Rr7 & R7)
-
-        N = R7
-        Z = 0 if result != 0 else 1
-
-        C = 1 if real_result > 0xFF else 0
-
-        self.SREG.status["H"] = H
-        self.SREG.status["V"] = V
-        self.SREG.status["N"] = N
-        self.SREG.status["S"] = S
-        self.SREG.status["Z"] = Z
-        self.SREG.status["C"] = C
+        if (
+            self.to_signed(dest) > 0 and self.to_signed(source) > 0 and signed_result < 0
+        ) or (
+            self.to_signed(dest) < 0 and self.to_signed(source) < 0 and signed_result > 0
+        ):
+            self.SREG.status["V"] = 1
+        else:
+            self.SREG.status["V"] = 0
+        self.SREG.status["H"] = 1 if ((dest & 0xF) - (source & 0xF)) -  self.SREG.status['C'] < 0x0 else 0
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        self.SREG.status["C"] = 1 if dest >= (source + self.SREG.status['C']) else 0
+        
         self.PC.address += 1
 
     def LDI(self, destination: int, value: int):
@@ -167,13 +158,28 @@ class ALU:
         dest_val = self.ins_register.get(destination)
         src_val = self.ins_register.get(source)
         result = dest_val | src_val
+        
+        self.SREG.status["N"] = result >> 7 & 0b1
+        self.SREG.status["V"] = 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        
         self.ins_register.set(destination, result)
         self.PC.address += 1
 
     def AND(self, destination, source):
         dest_val = self.ins_register.get(destination)
         src_val = self.ins_register.get(source)
-        result = dest_val & src_val
+        value = dest_val & src_val
+        result = value & 0xFF
+
+        self.SREG.status["V"] = 0
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["S"] = 1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+
         self.ins_register.set(destination, result)
         self.PC.address += 1
 
@@ -260,19 +266,34 @@ class ALU:
         self.PC.address += 1
 
     def ADIW(self, destination, source):
-        HIGH = format(self.ins_register.get(destination), "X")
-        LOW = format(self.ins_register.get(destination + 1), "X")
+        LOW = self.ins_register.get(destination)
+        HIGH = self.ins_register.get(destination + 1)
 
-        value = int(f"{HIGH}{LOW}", 16)
+        value = (HIGH << 8) | LOW
+        result = (value + source) & 0xFFFF
 
-        result = format(value + source, "X").zfill(16)
-        self.ins_register.set(destination, int(result[:8], 16))
-        self.ins_register.set(destination + 1, int(result[8:], 16))
+        self.SREG.status["V"] = int((value >> 15) == 0) and ((result >> 15) == 1)
+        self.SREG.status["N"] = 1 if result >> 15 & 0b1 else 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        self.SREG.status["C"] = 1 if result > 0xFFFF else 0
+
+        self.ins_register.set(destination, result & 0xFF)
+        self.ins_register.set(destination + 1, (result >> 8) & 0xFF)
+
         self.PC.address += 1
 
     def ANDI(self, destination: int, source: int):
         dest_val = self.ins_register.get(destination)
-        result = dest_val & source
+        value = dest_val & source
+        result = value & 0xFF
+
+        self.SREG.status["V"] = 0
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["S"] = 1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
 
         self.ins_register.set(destination, result)
         self.PC.address += 1
@@ -284,16 +305,37 @@ class ALU:
     def ORI(self, destination, source):
         dest_val = self.ins_register.get(destination)
         result = dest_val | source
+        
+        
+        self.SREG.status["N"] = result >> 7 & 0b1
+        self.SREG.status["V"] = 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        
         self.ins_register.set(destination, result)
         self.PC.address += 1
 
     def ASR(self, destination):
         value = self.ins_register.get(destination)
         ML = value & 0b1
+        self.SREG.status["C"] = ML
 
         shift = value >> 1
-        self.ins_register.set(destination, shift)
-        self.SREG.status["C"] = ML
+        result = shift & 0xFF
+
+        self.ins_register.set(destination, result)
+
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["V"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["C"] else 0
+        )
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+
         self.PC.address += 1
 
     def BCLR(self, flag):
@@ -596,8 +638,14 @@ class ALU:
 
     def COM(self, destination):
         value = self.ins_register.get(destination)
-        result = 0xFF - value
+        result = ~value & 0xFF
         self.ins_register.set(destination, result)
+
+        self.SREG.status["V"] = 0
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["S"] = self.SREG.status["N"]
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        self.SREG.status["C"] = 1
 
         self.PC.address += 1
 
@@ -605,22 +653,66 @@ class ALU:
         value1 = self.ins_register.get(destination)
         value2 = self.ins_register.get(source)
 
-        if value1 == value2:
-            pass
+        result = value1 - value2
+        self.SREG.status["H"] = 1 if ((value1 & 0xF)) < ((value2 & 0xF)) else 0
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["V"] = (
+            1
+            if (
+                ((value1 & 0x80) == (value2 & 0x80))
+                and ((result & 0x80) != (value1 & 0x80))
+            )
+            else 0
+        )
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        self.SREG.status["C"] = 1 if value1 >= value2 else 0
+        self.PC.address += 1
 
     def CPC(self, destination, source):
         value1 = self.ins_register.get(destination)
         value2 = self.ins_register.get(source)
 
-        if value1 == value2:
-            pass
+        result = (value1 - value2) + self.SREG.status['C'] 
+        self.SREG.status["H"] = 1 if ((value1 & 0xF)) < ((value2 & 0xF)) else 0
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["V"] = (
+            1
+            if (
+                ((value1 & 0x80) == (value2 & 0x80))
+                and ((result & 0x80) != (value1 & 0x80))
+            )
+            else 0
+        )
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        self.SREG.status["C"] = 1 if value1 >= (value2 + self.SREG.status['C'] ) else 0
+        self.PC.address += 1
 
     def CPI(self, destination, source):
         value1 = self.ins_register.get(destination)
-        value2 = self.ins_register.get(source)
 
-        if value1 == value2:
-            pass
+        result = (value1 - source)
+        self.SREG.status["H"] = 1 if ((value1 & 0xF)) < ((source & 0xF)) else 0
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["V"] = (
+            1
+            if (
+                ((value1 & 0x80) == (source & 0x80))
+                and ((result & 0x80) != (value1 & 0x80))
+            )
+            else 0
+        )
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        self.SREG.status["C"] = 1 if value1 >= (source) else 0
+        self.PC.address += 1
 
     def CPSE(self, destination, source):
         value1 = self.ins_register.get(destination)
@@ -632,18 +724,33 @@ class ALU:
     def DEC(self, destination):
         value1 = self.ins_register.get(destination)
         result = value1 - 1
+        
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["V"] = (
+            1
+            if ((value1  == 0x80))
+            else 0
+        )
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        
         self.ins_register.set(destination, result)
-
-    def DEC(self, destination):
-        value1 = self.ins_register.get(destination)
-        result = value1 - 1
-        self.ins_register.set(destination, result)
+        self.PC.address += 1
 
     def EOR(self, register1, register2):
         value1 = self.ins_register.get(register1)
         value2 = self.ins_register.get(register2)
 
         result = value1 ^ value2
+        
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["V"] = 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
 
         self.ins_register.set(register1, result)
 
@@ -692,7 +799,19 @@ class ALU:
 
     def INC(self, destination):
         value1 = self.ins_register.get(destination)
-        result = value1 - 1
+        result = value1 + 1
+        
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["V"] = (
+            1
+            if ((value1  == 0x7F))
+            else 0
+        )
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        
         self.ins_register.set(destination, result)
         self.PC.address += 1
 
@@ -749,6 +868,7 @@ class ALU:
 
         self.ins_register.set(destination, value)
         self.PC.address += 1
+
     def STX(self, destination, source):
         value1 = self.ins_register.get(27)
         value2 = self.ins_register.get(26)
@@ -831,9 +951,19 @@ class ALU:
 
     def LSR(self, destination):
         value = self.ins_register.get(destination)
-
-        C = (value >> 1) & 1
+        result = value >> 1
+        C = result & 1
         self.SREG.status["C"] = C
+        
+        self.SREG.status["N"] = 0
+        self.SREG.status["V"] =   1 if self.SREG.status["N"] ^ self.SREG.status["C"] else 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        
+        self.ins_register.set(destination, result)
+        
         self.PC.address += 1
 
     def MOVW(self, destination, source):
@@ -859,6 +989,16 @@ class ALU:
         value = self.ins_register.get(destination)
 
         result = 0x00 - value
+
+        self.SREG.status["H"] = 1 if value & 0xF < result & 0xF else 0
+        self.SREG.status["N"] = result >> 7 & 0b1
+        self.SREG.status["V"] =   1 if result == 0x80 else 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        self.SREG.status["C"] = 1 if result != 0x0 else 0
+        
         self.ins_register.set(destination, result)
         self.PC.address += 1
 
@@ -903,13 +1043,20 @@ class ALU:
         self.ins_register.get(destination, result)
 
         self.SREG.status["C"] = CO
+        
+        self.SREG.status["N"] = result >> 7 & 0b1
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["V"] =  1 if self.SREG.status["N"] ^ self.SREG.status["C"] else 0
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
 
         self.PC.address += 1
 
     def SBIC(self, destination, pos):
         value = self.sram.get(destination)
         mask = 1 << pos
-        
+
         if value & mask == 0b0:
             self.PC.address += 2
         else:
@@ -918,105 +1065,140 @@ class ALU:
     def SBIS(self, destination, pos):
         value = self.sram.get(destination)
         mask = 1 << pos
-        
+
         if value & mask == 0b1:
             self.PC.address += 2
         else:
             self.PC.address += 1
 
-
     def SBIW(self, destination: int, source: int):
-        value1 = self.ins_register.get(destination + 1)
-        value2 = self.ins_register.get(destination)
-        
-        combine = int("".join([format(value1, "X"), format(value2, "X")]), 16)
-        
-        result = combine - source
-        hex_string = format(result, "X").zfill(4)
+        LOW = self.ins_register.get(destination)
+        HIGH = self.ins_register.get(destination + 1)
 
-        self.ins_register.set(destination + 1, hex_string[:8])
-        self.ins_register.set(destination, hex_string[8:])
+        value = (HIGH << 8) | LOW
+        result = (value - source) & 0xFFFF
+
+        self.SREG.status["V"] = int((value >> 15) == 0) and ((result >> 15) == 1)
+        self.SREG.status["N"] = 1 if result >> 15 & 0b1 else 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0000 else 0
+        self.SREG.status["C"] = 1 if result <= 0xFFFF else 0
+
+        self.ins_register.set(destination, result & 0xFF)
+        self.ins_register.set(destination + 1, (result >> 8) & 0xFF)
         self.PC.address += 1
-        
 
     def SBR(self, destination, source):
         value = self.ins_register.get(destination)
-        
-        self.ins_register.set(destination, value | source)
+
+        result = value | source
+        self.SREG.status["N"] = result >> 7 & 0b1
+        self.SREG.status["V"] = 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+
+        self.ins_register.set(destination, result   )
         self.PC.address += 1
-    
+
     def SBRC(self, destination, pos):
         value = self.ins_register.get(destination)
-        
+
         if value >> pos & 0b1 == 0:
             self.PC.address += 2
         else:
             self.PC.address += 1
-    
+
     def SBRS(self, destination, pos):
         value = self.ins_register.get(destination)
-        
+
         if value >> pos & 0b1 == 1:
             self.PC.address += 2
         else:
             self.PC.address += 1
-            
+
     def SEC(self):
-        self.SREG.status['C'] = 1
-        self.PC.address += 1
-            
-    def SEH(self):
-        self.SREG.status['H'] = 1
-        self.PC.address += 1
-    def SEI(self):
-        self.SREG.status['I'] = 1
-        self.PC.address += 1
-        
-    def SEN(self):
-        self.SREG.status['N'] = 1
-        self.PC.address += 1
-        
-    def SER(self, destination):
-        self.ins_register.set(destination, 0xFF)
-        
-    
-    def SES(self):
-        self.SREG.status['S'] = 1
-        self.PC.address += 1
-    
-    def SET(self):
-        self.SREG.status['T'] = 1
-        self.PC.address += 1
-    
-    def SEV(self):
-        self.SREG.status['V'] = 1
-        self.PC.address += 1
-    
-    def SEZ(self):
-        self.SREG.status['Z'] = 1
-        self.PC.address += 1
-    
-    def SLEEP(self):
-        self.PC.address += 1
-        
-    def SUBI(self, destination: int, source: int):
-        dest = self.ins_register.get(destination)
-        result = dest - source
-        
-        self.ins_register.get(destination, result)
+        self.SREG.status["C"] = 1
         self.PC.address += 1
 
-        
+    def SEH(self):
+        self.SREG.status["H"] = 1
+        self.PC.address += 1
+
+    def SEI(self):
+        self.SREG.status["I"] = 1
+        self.PC.address += 1
+
+    def SEN(self):
+        self.SREG.status["N"] = 1
+        self.PC.address += 1
+
+    def SER(self, destination):
+        self.ins_register.set(destination, 0xFF)
+
+    def SES(self):
+        self.SREG.status["S"] = 1
+        self.PC.address += 1
+
+    def SET(self):
+        self.SREG.status["T"] = 1
+        self.PC.address += 1
+
+    def SEV(self):
+        self.SREG.status["V"] = 1
+        self.PC.address += 1
+
+    def SEZ(self):
+        self.SREG.status["Z"] = 1
+        self.PC.address += 1
+
+    def SLEEP(self):
+        self.PC.address += 1
+
+    def SUBI(self, destination: int, source: int):
+        dest = self.ins_register.get(destination)
+        real_result = dest - source
+        result = real_result & 0xFF
+        signed_result = self.to_signed(result)
+
+        if (
+            self.to_signed(dest) > 0 and self.to_signed(source) > 0 and signed_result < 0
+        ) or (
+            self.to_signed(dest) < 0 and self.to_signed(source) < 0 and signed_result > 0
+        ):
+            self.SREG.status["V"] = 1
+        else:
+            self.SREG.status["V"] = 0
+        self.SREG.status["H"] = 1 if ((dest & 0xF) - (source & 0xF)) > 0xF else 0
+        self.SREG.status["N"] = 1 if result >> 7 & 0b1 else 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        self.SREG.status["C"] = 1 if dest >= source else 0
+
+        self.ins_register.set(destination, result)
+        self.PC.address += 1
+
     def SWAP(self, destination):
         value = self.ins_register.get(destination)
-        
-        hex_str = format(value, 'X').zfill(8)
-        
+
+        hex_str = format(value, "X").zfill(8)
+
         result = f"{hex_str[4:]}hex_str[:4]"
+        
+        self.SREG.status["N"] = result >> 7 & 0b1
+        self.SREG.status["V"] = 0
+        self.SREG.status["S"] = (
+            1 if self.SREG.status["N"] ^ self.SREG.status["V"] else 0
+        )
+        self.SREG.status["Z"] = 1 if result == 0x0 else 0
+        
         self.ins_register.set(destination, int(result))
         self.PC.address += 1
 
-    
     def WDR(self):
         self.PC.address += 1
-    
