@@ -62,7 +62,7 @@ class Instruction:
                 self.reg2bin_special(self.operands[0], 24).zfill(2),
             )
             mask2 = self.value_pusher(
-                mask1, "K", format(int(self.operands[1], 16), "b").zfill(6)
+                mask1, "K", self.formater_value(self.operands[1]).zfill(6)
             )
             return mask2.replace(" ", "")
         elif self.opcode in [
@@ -224,7 +224,7 @@ class Instruction:
             return mask2.replace(" ", "")
         elif self.opcode in ["OUT"]:
             mask1 = self.value_pusher(
-                OPCODE[self.opcode], "A", self.formater_value(self.operands[0]).zfill(6)
+                OPCODE[self.opcode], "A", self.formater_value(self.operands[0], base_start=0x20).zfill(6)
             )
             mask2 = self.value_pusher(
                 mask1,
@@ -309,11 +309,11 @@ class Instruction:
         else:
             raise ValueError(f"Unknows OPCODE: {self.opcode}")
 
-    def formater_value(self, value):
+    def formater_value(self, value, base_start = 0):
         if str(value).startswith("0x"):
-            return format(int(value, 16), "b")
+            return format(int(value, 16) - base_start, "b")
         elif str(value).isdigit():
-            return format(int(value), "b")
+            return format(int(value) - base_start, "b")
 
     def reg2bin(self, value: str):
         num = int(value.replace("R", "").replace("r", ""))
@@ -324,9 +324,8 @@ class Instruction:
 
     def reg2bin_special(self, value: str, base_start):
         num = int(value.replace("R", "").replace("r", "")) - base_start
-
-        if num > REGISTER_COUNT:
-            raise ValueError("Register out of range")
+        if num < 0 or num > REGISTER_COUNT:
+            raise ValueError(f"Register out of range, use only from register {base_start}")
         return format(num, "b")
 
     def halfreg2bin(self, value: str):
@@ -354,7 +353,10 @@ class Instruction:
         if str(value).startswith("-"):
             return self.flip_binary(format(int(clear), "b").zfill(padding))
         else:
-            return format(int(clear), "b").zfill(padding)
+            if str(clear).startswith('0x'):
+                return format(int(clear, 16), "b").zfill(padding)
+            else:
+                return format(int(clear), "b").zfill(padding)
 
     def flip_binary(self, value):
         return "".join("1" if bit == "0" else "0" for bit in value)

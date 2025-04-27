@@ -90,7 +90,6 @@ class InstructionDecoder:
             source = (high << 4) | low
             if not self.DefinitionMode:
                 self.alu.ADIW(destination, source)
-                pass
 
             return f"ADIW R{destination}, {hex(source)}"
 
@@ -491,8 +490,7 @@ class InstructionDecoder:
             low = (operation) & 0b1111
             source = (high << 4) | low
             if not self.DefinitionMode:
-
-                pass
+                self.alu.EOR(destination, source)
 
             return f"EOR R{destination}, R{source}"
         # CLR
@@ -714,7 +712,7 @@ class InstructionDecoder:
         elif (operation >> 11) & 0b11111 == 0b10111:
             high = (operation >> 9) & 0b11
             low = (operation) & 0b1111
-            destination = (high << 4) | low
+            destination = ((high << 4) | low) + 0x20
             source = (operation >> 4) & 0b11111
             if not self.DefinitionMode:
                 self.alu.OUT(destination, source)
@@ -1063,6 +1061,16 @@ class InstructionDecoder:
                 pass
 
             return f"WDR"
+        # JMP
+        elif operation >> 9 & 0b1111111 == 0b1001010 and operation >> 1 & 0b111 == 0b110:
+                dest_H = operation >> 4 & 0b11111
+                dest_L = operation & 0b1
+                destination = (dest_H << 1)| dest_L 
+
+                if not self.DefinitionMode:
+                    self.alu.JMP(destination)
+
+                return f"JMP {hex(destination)}"
 
         else:
             if not self.DefinitionMode:

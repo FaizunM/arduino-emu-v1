@@ -12,13 +12,13 @@ class DataMemoryMap:
         self.SRAM_END = 0x8FF
         
     def get(self, address: int):
-        if address > len(self.map_address) - 1:
+        if address > len(self.map_address):
             raise ValueError("Out of memory")
 
         return self.map_address[address]
 
     def set(self, address: int, value: int):
-        if address > len(self.map_address) - 1:
+        if address > len(self.map_address):
             raise ValueError("Out of memory")
         
         self.map_address[address] = value
@@ -32,9 +32,11 @@ class DataMemoryMap:
     def get_SP(self):
         SPH = self.map_address[0x5E]
         SPL = self.map_address[0x5D]
+        
         return (SPH << 8) | SPL
     
     def set_SP(self, new_sp):
+        
         self.map_address[0x5E] = new_sp >> 8 & 0b11111111
         self.map_address[0x5D] = new_sp & 0b11111111
         

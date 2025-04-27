@@ -36,8 +36,7 @@ class MyApplication:
             curses.A_REVERSE,
         )
 
-    def draw(self):
-        self.stdscr.erase()
+    def draw_header(self):
         self.stdscr.addstr(0, 1, f"PC Address ->  {hex(self.PC.address)} ")
         self.stdscr.addstr(1, 1, f"Flash Used ->  [")
         self.stdscr.addstr(
@@ -58,6 +57,9 @@ class MyApplication:
             1,
             f"On Process ->  {format(self.flash.get(self.PC.address), 'b').zfill(32)} ",
         )
+    def draw(self):
+        self.stdscr.erase()
+        self.draw_header()
         self.draw_bottom_bar()
 
         self.stdscr.noutrefresh()

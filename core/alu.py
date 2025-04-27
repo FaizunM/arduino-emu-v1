@@ -191,7 +191,6 @@ class ALU:
 
     def RET(self):
         SP = self.DMEM.get_SP()
-
         address = self.DMEM.get(SP)
         SP = SP + 1
 
@@ -245,6 +244,7 @@ class ALU:
         HIGH = self.DMEM.get(destination + 1)
 
         value = (HIGH << 8) | LOW
+        
         result = (value + source) & 0xFFFF
 
         self.DMEM.set_SREG("V", int((value >> 15) == 0) and ((result >> 15) == 1))

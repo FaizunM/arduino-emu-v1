@@ -16,7 +16,7 @@ class PageManager:
         self.height, self.width = self.stdscr.getmaxyx()
 
         self.pages = [
-            MonitorWindow(self.height - 4, self.width, 3, 0, self.PC, self.flash),
+            MonitorWindow(self.height - 4, self.width, 3, 0, self.PC, self.flash, self.DMEM),
             SRAMWindow(self.height - 4, self.width, 3, 0, self.DMEM),
             EEPROMWindow(self.height - 4, self.width, 3, 0, self.EEPROM),
             FlashWindow(self.height - 4, self.width, 3, 0, self.flash),

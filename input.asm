@@ -5,24 +5,9 @@ RAMSTART: .hword 0x100
 RAMEND: .hword 0x8FF
 
 .text
-skip:
-    LDI R16, 0x01
-    NOP
-.text
-noskip:
-    LDI R17, 0x01
-    NOP
-
-.text
 _start:
-    ; INITILIZE STACK POINTER
-    LDI R16, HIGH(RAMEND)
-    OUT SPH, R16
-    LDI R16, LOW(RAMEND)
-    OUT SPL, R16
-    ; BASIC CODE
-    LDI R31, 0x5
-    LDI R30, 0xe
-    LPM
+    ldi r16, 0xFF
+    ldi r17, 0xA0
+    eor r16, r17
+    JMP 0x0
     NOP
-    JMP 0x7FFF
