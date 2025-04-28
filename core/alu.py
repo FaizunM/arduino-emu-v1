@@ -339,15 +339,15 @@ class ALU:
         value = self.DMEM.get(destination)
 
         if T:
-            value != (1 << pos)
+            value = value | (1 << pos)
             self.DMEM.set(destination, value)
         else:
-            value &= ~(1 << pos)
+            value = value & ~(1 << pos)
             self.DMEM.set(destination, value)
         self.PC.address += 1
 
     def BRBC(self, destination, offset):
-        state = self.DMEM.get_SREG() << destination
+        state = self.DMEM.get_SREG() >> destination
 
         if state == 0:
             self.PC.address = (self.PC.address + 1) + offset
@@ -355,7 +355,7 @@ class ALU:
             self.PC.address += 1
 
     def BRBS(self, destination, offset):
-        state = self.DMEM.get_SREG() << destination
+        state = self.DMEM.get_SREG() >> destination
 
         if state == 1:
             self.PC.address = (self.PC.address + 1) + offset

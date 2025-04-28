@@ -54,31 +54,32 @@ class MonitorWindow(Page):
 
         self.PC.draw_debug(self.window)
         
-        self.window.addstr(3, 84, f'Stack Pointer --> {self.DMEM.get_SP()}')
-        
-        self.window.addstr(4, 84, str(self.DMEM.get_SREG('I')))
-        self.window.addstr(5, 84, f'I')
-        self.window.addstr(4, 86, str(self.DMEM.get_SREG('T')))
-        self.window.addstr(5, 86, f'T')
-        self.window.addstr(4, 88, str(self.DMEM.get_SREG('H')))
-        self.window.addstr(5, 88, f'H')
-        self.window.addstr(4, 90, str(self.DMEM.get_SREG('S')))
-        self.window.addstr(5, 90, f'S')
-        self.window.addstr(4, 92, str(self.DMEM.get_SREG('V')))
-        self.window.addstr(5, 92, f'V')
-        self.window.addstr(4, 94, str(self.DMEM.get_SREG('N')))
-        self.window.addstr(5, 94, f'N')
-        self.window.addstr(4, 96, str(self.DMEM.get_SREG('Z')))
-        self.window.addstr(5, 96, f'Z')
-        self.window.addstr(4, 98, str(self.DMEM.get_SREG('C')))
-        self.window.addstr(5, 98, f'C')
-        
-        for i in range(0, 16):
-            self.window.addstr(7, 84 + i * 3, f"{format(self.DMEM.get(i), 'X')}")
+        if self.height > 7:
+            self.window.addstr(3, 84, f'Stack Pointer --> {self.DMEM.get_SP()}')
             
-        for i in range(0, 16):
-            self.window.addstr(8, 84 + i * 3, f"{format(self.DMEM.get(16 + i), 'X')}")
+            self.window.addstr(4, 84, str(self.DMEM.get_SREG('I')))
+            self.window.addstr(5, 84, f'I')
+            self.window.addstr(4, 86, str(self.DMEM.get_SREG('T')))
+            self.window.addstr(5, 86, f'T')
+            self.window.addstr(4, 88, str(self.DMEM.get_SREG('H')))
+            self.window.addstr(5, 88, f'H')
+            self.window.addstr(4, 90, str(self.DMEM.get_SREG('S')))
+            self.window.addstr(5, 90, f'S')
+            self.window.addstr(4, 92, str(self.DMEM.get_SREG('V')))
+            self.window.addstr(5, 92, f'V')
+            self.window.addstr(4, 94, str(self.DMEM.get_SREG('N')))
+            self.window.addstr(5, 94, f'N')
+            self.window.addstr(4, 96, str(self.DMEM.get_SREG('Z')))
+            self.window.addstr(5, 96, f'Z')
+            self.window.addstr(4, 98, str(self.DMEM.get_SREG('C')))
+            self.window.addstr(5, 98, f'C')
             
+            for i in range(0, 16):
+                self.window.addstr(7, 84 + i * 3, f"{format(self.DMEM.get(i), 'X')}")
+                
+            for i in range(0, 16):
+                self.window.addstr(8, 84 + i * 3, f"{format(self.DMEM.get(16 + i), 'X')}")
+                
         self.window.noutrefresh()
 
     def handle_input(self, key):

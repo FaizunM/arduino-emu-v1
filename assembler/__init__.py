@@ -80,7 +80,7 @@ class Assembler:
             if oprnd in self.symbol_table:
                 if self.symbol_table[oprnd]["section"] == ".text":
                     if opcode in ['BRBC', 'BRBS', 'BRCC', 'BRCS', 'BREQ', 'BRGE', 'BRHC', 'BRHS', 'BRID', 'BRIE', 'BRLO', 'BRLT', 'BRMI', 'BRNE', 'BRPL', 'BRSH', 'BRTC', 'BRTS', 'BRTC', 'BRVS', 'RCALL', 'RJMP']:
-                        offset = self.compile_address - int(self.symbol_table[f"{oprnd}"]["address"])
+                        offset = int(self.symbol_table[f"{oprnd}"]["address"])
                         filter_symbol.append(hex(offset))
                     else:
                         filter_symbol.append(int(self.symbol_table[f"{oprnd}"]["address"]))
@@ -197,7 +197,7 @@ class Assembler:
                 self.compile_address += 1
 
         Binary = [0] * self.address
-
+                
         for idx, text in enumerate(self.text_segment):
             encode = self.encode_line(text.instruction)
             Binary[text.address] = int(encode.replace(" ", ""), 2)

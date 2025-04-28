@@ -1,6 +1,6 @@
 # import serial
 
-# ser = serial.Serial('COM6', 115200, timeout=0.1)
+# ser = serial.Serial('COM9', 115200, timeout=0.1)
 
 # with open('capture.bin', 'wb') as f:
 #     print('Capturing data')

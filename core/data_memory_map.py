@@ -47,7 +47,7 @@ class DataMemoryMap:
         
         return bits & ~(1 << pos)
     
-    def get_SREG(self, status):
+    def get_SREG(self, status = None):
         sreg = self.map_address[0x5F]
         
         if status == 'I':

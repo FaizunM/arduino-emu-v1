@@ -97,16 +97,21 @@ class Instruction:
                 self.formater_value(self.operands[1]).zfill(3),
             )
             return mask2.replace(" ", "")
-        elif self.opcode in ["BRBC", "BRBS", "BSET"]:
+        elif self.opcode in ["BRBC", "BRBS"]:
             mask1 = self.value_pusher(
                 OPCODE[self.opcode], "s", self.formater_value(self.operands[0]).zfill(3)
             )
             mask2 = self.value_pusher(
                 mask1,
                 "k",
-                self.formater_value(self.operands[0]).zfill(7),
+                self.formater_value(self.operands[1]).zfill(7),
             )
             return mask2.replace(" ", "")
+        elif self.opcode in ["BSET"]:
+            mask1 = self.value_pusher(
+                OPCODE[self.opcode], "s", self.formater_value(self.operands[0]).zfill(3)
+            )
+            return mask1.replace(" ", "")
         elif self.opcode in [
             "BRCC",
             "BRCS",
