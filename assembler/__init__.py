@@ -45,7 +45,7 @@ class Assembler:
             return int(value)
         return value
 
-    def encode_line(self, line):
+    def encode_line(self, line, address):
         line = line.split(";")[0]
         opcode = line.split(" ")[0].upper()
         operands = line[len(opcode) :].replace(" ", "").split(",")
@@ -80,8 +80,8 @@ class Assembler:
             if oprnd in self.symbol_table:
                 if self.symbol_table[oprnd]["section"] == ".text":
                     if opcode in ['BRBC', 'BRBS', 'BRCC', 'BRCS', 'BREQ', 'BRGE', 'BRHC', 'BRHS', 'BRID', 'BRIE', 'BRLO', 'BRLT', 'BRMI', 'BRNE', 'BRPL', 'BRSH', 'BRTC', 'BRTS', 'BRTC', 'BRVS', 'RCALL', 'RJMP']:
-                        offset = int(self.symbol_table[f"{oprnd}"]["address"])
-                        filter_symbol.append(hex(offset))
+                        offset = int(self.symbol_table[f"{oprnd}"]["address"]) - address
+                        filter_symbol.append(hex(offset - 1))
                     else:
                         filter_symbol.append(int(self.symbol_table[f"{oprnd}"]["address"]))
             else:
@@ -165,6 +165,7 @@ class Assembler:
             self.data_segment[idx].address = address
             self.symbol_table[f"{self.data_segment[idx].label}"]["address"] = address
 
+        new_text_section = []
         self.write = False
         for idx, text in enumerate(self.text_segment):
             if text.label == "_start":
@@ -175,6 +176,7 @@ class Assembler:
                         "address"
                     ] = self.compile_address
                 self.text_segment[idx].address = self.compile_address
+                new_text_section.append(self.text_segment[idx])
                 self.compile_address += 1
 
             if text.label != None and text.label != "_start":
@@ -194,14 +196,18 @@ class Assembler:
                         "address"
                     ] = self.compile_address
                 self.text_segment[idx].address = self.compile_address
+                new_text_section.append(self.text_segment[idx])
                 self.compile_address += 1
 
         Binary = [0] * self.address
-                
-        for idx, text in enumerate(self.text_segment):
-            encode = self.encode_line(text.instruction)
+        
+        
+        address = 0x0
+        for text in new_text_section:
+            encode = self.encode_line(text.instruction, address)
             Binary[text.address] = int(encode.replace(" ", ""), 2)
-
+            address += 1
+            
         for idx, data in enumerate(self.data_segment):
             Binary[data.address] = int(data.value, 0)
 

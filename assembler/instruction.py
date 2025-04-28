@@ -219,12 +219,20 @@ class Instruction:
                 OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(4)
             )
             return mask2.replace(" ", "")
-        elif self.opcode in ["MOVW", "MULS"]:
+        elif self.opcode in ["MOVW"]:
             mask1 = self.value_pusher(
                 OPCODE[self.opcode], "d", self.reg2bin(self.operands[0]).zfill(4)
             )
             mask2 = self.value_pusher(
                 mask1, "r", self.reg2bin(self.operands[1]).zfill(4)
+            )
+            return mask2.replace(" ", "")
+        elif self.opcode in ["MULS"]:
+            mask1 = self.value_pusher(
+                OPCODE[self.opcode], "d", self.reg2bin_special(self.operands[0], 16).zfill(4)
+            )
+            mask2 = self.value_pusher(
+                mask1, "r", self.reg2bin_special(self.operands[1], 16).zfill(4)
             )
             return mask2.replace(" ", "")
         elif self.opcode in ["OUT"]:

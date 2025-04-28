@@ -2,9 +2,7 @@ from core.alu import ALU
 
 
 class InstructionDecoder:
-    def __init__(
-        self, PC=None, DMEM=None, DefinitionMode=False
-    ):
+    def __init__(self, PC=None, DMEM=None, DefinitionMode=False):
         self.DefinitionMode = DefinitionMode
         if not DefinitionMode:
             self.alu = ALU(PC, DMEM)
@@ -506,8 +504,7 @@ class InstructionDecoder:
             destination = (operation >> 4) & 0b11111
 
             if not self.DefinitionMode:
-                # self.alu.CALL(destination)
-                pass
+                self.alu.COM(destination)
 
             return f"COM R{ destination }"
 
@@ -550,8 +547,6 @@ class InstructionDecoder:
             if not self.DefinitionMode:
                 self.alu.CPC(destination, source)
 
-                pass
-
             return f"CPSE R{destination}, R{source}"
         # DEC
         elif (operation >> 9) & 0b1111111 == 0b1001010 and operation & 0b1111 == 0b1010:
@@ -576,11 +571,10 @@ class InstructionDecoder:
         elif (
             operation >> 7
         ) & 0b111111111 == 0b000000111 and operation >> 3 & 0b1 == 0:
-            destination = (operation >> 4) & 0b111
-            source = operation & 0b111
+            destination = ((operation >> 4) & 0b111) + 16
+            source = (operation & 0b111) + 16
             if not self.DefinitionMode:
-
-                pass
+                self.alu.FMULS(destination, source)
 
             return f"FMULS R{destination}, R{source}"
 
@@ -588,11 +582,10 @@ class InstructionDecoder:
         elif (
             operation >> 7
         ) & 0b111111111 == 0b000000111 and operation >> 3 & 0b1 == 1:
-            destination = (operation >> 4) & 0b111
-            source = operation & 0b111
+            destination = ((operation >> 4) & 0b111) + 16
+            source = (operation & 0b111) + 16
             if not self.DefinitionMode:
-
-                pass
+                self.alu.FMULSU(destination, source)
 
             return f"FMULSU R{destination}, R{source}"
 
@@ -662,7 +655,7 @@ class InstructionDecoder:
             destination = (operation >> 4) & 0b11111
             high = (operation >> 9) & 0b1
             low = (operation) & 0b1111
-            source = (high << 5) | low
+            source = ((high << 5) | low) - 16
             if not self.DefinitionMode:
                 self.alu.MUL(destination, source)
 
@@ -670,12 +663,23 @@ class InstructionDecoder:
 
         # MULS
         elif (operation >> 8) & 0b11111111 == 0b00000010:
-            destination = (operation >> 4) & 0b1111
-            source = operation & 0b1111
-            # if not self.DefinitionMode:
-            #     self.alu.ADC(destination, source)
+            destination = ((operation >> 4) & 0b1111) + 16
+            source = (operation & 0b1111) + 16
+            if not self.DefinitionMode:
+                self.alu.MULS(destination, source)
 
-            return f"MULS R{destination}, {source}"
+            return f"MULS R{destination}, R{source}"
+
+        # MULSU
+        elif (
+            operation >> 7
+        ) & 0b111111111 == 0b000000110 and operation >> 3 & 0b1 == 0:
+            destination = ((operation >> 4) & 0b111) + 16
+            source = (operation & 0b111) + 16
+            if not self.DefinitionMode:
+                self.alu.MULSU(destination, source)
+
+            return f"MULSU R{destination}, R{source}"
 
         # NEG
         elif (operation >> 9) & 0b1111111 == 0b1001010 and operation & 0b1111 == 0b0001:
@@ -704,7 +708,6 @@ class InstructionDecoder:
             source = (high << 4) | low
             if not self.DefinitionMode:
                 self.alu.ORI(destination, source)
-                pass
 
             return f"ORI/SBR R{destination}, {source}"
 
@@ -888,7 +891,6 @@ class InstructionDecoder:
             destination = (operation >> 4) & 0b1111 + 16
             if not self.DefinitionMode:
                 self.alu.PUSH(destination)
-                pass
 
             return f"PUSH R{destination}"
 
@@ -911,8 +913,6 @@ class InstructionDecoder:
         elif (operation) & 0b1111111111111111 == 0b1001010100011000:
             if not self.DefinitionMode:
                 self.alu.RETI()
-
-                pass
 
             return f"RETI"
 
@@ -957,7 +957,6 @@ class InstructionDecoder:
             source = (high << 4) | low
             if not self.DefinitionMode:
                 self.alu.SBCI(destination, source)
-
 
             return f"SBCI R{destination}, {hex(source)}"
 
@@ -1008,7 +1007,6 @@ class InstructionDecoder:
             source = operation & 0b111
             if not self.DefinitionMode:
                 self.alu.SBRC(destination, source)
-                
 
             return f"SBRC R{destination}"
 
@@ -1029,7 +1027,6 @@ class InstructionDecoder:
             source = ((high << 5) | low) - 16
             if not self.DefinitionMode:
                 self.alu.SUB(destination, source)
-                pass
 
             return f"SUB R{destination}, {source}"
 
@@ -1049,7 +1046,6 @@ class InstructionDecoder:
             destination = (operation >> 4) & 0b11111
             if not self.DefinitionMode:
                 self.alu.SUBI(destination)
-                pass
 
             return f"SWAP R{destination}"
 
@@ -1058,19 +1054,19 @@ class InstructionDecoder:
             if not self.DefinitionMode:
                 self.alu.WDR()
 
-                pass
-
             return f"WDR"
         # JMP
-        elif operation >> 9 & 0b1111111 == 0b1001010 and operation >> 1 & 0b111 == 0b110:
-                dest_H = operation >> 4 & 0b11111
-                dest_L = operation & 0b1
-                destination = (dest_H << 1)| dest_L 
+        elif (
+            operation >> 9 & 0b1111111 == 0b1001010 and operation >> 1 & 0b111 == 0b110
+        ):
+            dest_H = operation >> 4 & 0b11111
+            dest_L = operation & 0b1
+            destination = (dest_H << 1) | dest_L
 
-                if not self.DefinitionMode:
-                    self.alu.JMP(destination)
+            if not self.DefinitionMode:
+                self.alu.JMP(destination)
 
-                return f"JMP {hex(destination)}"
+            return f"JMP {hex(destination)}"
 
         else:
             if not self.DefinitionMode:

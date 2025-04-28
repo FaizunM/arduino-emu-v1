@@ -714,11 +714,32 @@ class ALU:
         value2 = self.DMEM.get(source)
 
         Q1 = value1 * value2
-        shift = Q1 >> 1
+        shift = Q1 << 1
+        
+        self.DMEM.set(0x1, shift >> 8 & 0xFF)
+        self.DMEM.set(0x0, shift & 0xFF)
+        self.PC.address += 1
+    
+    def FMULS(self, destination, source):
+        value1 = self.DMEM.get(destination)
+        value2 = self.DMEM.get(source)
 
-        result = format(shift, "X").zfill(16)
-        self.DMEM.set(0x1, int(result[:8], 16))
-        self.DMEM.set(0x0 + 1, int(result[8:], 16))
+        Q1 = self.to_signed(value1) * self.to_signed(value2)
+        shift = Q1 << 1
+        
+        self.DMEM.set(0x1, shift >> 8 & 0xFF)
+        self.DMEM.set(0x0, shift & 0xFF)
+        self.PC.address += 1
+    
+    def FMULSU(self, destination, source):
+        value1 = self.DMEM.get(destination)
+        value2 = self.DMEM.get(source)
+
+        Q1 = self.to_signed(value1) * value2
+        shift = Q1 << 1
+        
+        self.DMEM.set(0x1, shift >> 8 & 0xFF)
+        self.DMEM.set(0x0, shift & 0xFF)
         self.PC.address += 1
 
     def ICALL(self):
@@ -920,11 +941,34 @@ class ALU:
     def MUL(self, destination, source):
         value1 = self.DMEM.get(destination)
         value2 = self.DMEM.get(source)
-
-        cal = format(int(value1 * value2), "X").zfill(16)
-
-        self.DMEM.set(0x1, cal[:8])
-        self.DMEM.set(0x0, cal[8:])
+        
+        result = value1 * value2
+        
+        self.DMEM.set(0x1, result >> 8 & 0xFF)
+        self.DMEM.set(0x0, result & 0xFF)
+        
+        self.PC.address += 1
+        
+    def MULS(self, destination, source):
+        value1 = self.DMEM.get(destination)
+        value2 = self.DMEM.get(source)
+        
+        result = self.to_signed(value1) * self.to_signed(value2)
+        
+        self.DMEM.set(0x1, result >> 8 & 0xFF)
+        self.DMEM.set(0x0, result & 0xFF)
+        
+        self.PC.address += 1
+        
+    def MULSU(self, destination, source):
+        value1 = self.DMEM.get(destination)
+        value2 = self.DMEM.get(source)
+        
+        result = self.to_signed(value1) * value2
+        
+        self.DMEM.set(0x1, result >> 8 & 0xFF)
+        self.DMEM.set(0x0, result & 0xFF)
+        
         self.PC.address += 1
 
     def NEG(self, destination):
